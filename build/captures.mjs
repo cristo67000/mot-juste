@@ -70,8 +70,18 @@ try {
   await verifier('« eleve » trouve « élève »',
     "[...document.querySelectorAll('#resultats .mot')].some(x => x.textContent === 'élève')");
 
+  /* On attend l'affichage réel plutôt qu'un délai fixe : sur le site publié,
+   * au premier lancement, la tranche arrive par le réseau pendant que le
+   * service worker pré-charge le socle. Le délai mesuré est affiché — c'est
+   * ce que voit la personne. */
+  const debutFiche = Date.now();
   await evaluer("Fiche.ouvrir({mot: 'feu'}); return true;");
-  await pause(1500);
+  for (let i = 0; i < 100; i += 1) {
+    if (await evaluer("return !!document.querySelector('#fiche .vedette-mot')")) break;
+    await pause(200);
+  }
+  console.log('  (fiche « feu » affichée en ' + ((Date.now() - debutFiche) / 1000).toFixed(1) + ' s)');
+  await pause(300);
   await verifier('fiche « feu » : sens numérotés', "document.querySelectorAll('#fiche .sens').length > 10");
   await verifier('fiche « feu » : étymologie', "document.querySelector('#fiche .etymologie-texte')");
   await verifier('fiche « feu » : locutions', "document.querySelector('#fiche .liste-liee')");
