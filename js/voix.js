@@ -205,7 +205,28 @@
   }
 
   function decrire(v) {
-    return v ? { uri: v.voiceURI, nom: v.name, libelle: libelle(v), lang: balise(v), locale: !!v.localService } : null;
+    return v ? { uri: v.voiceURI, nom: v.name, libelle: libelle(v), lang: balise(v), locale: !!v.localService,
+      region: regionDe(v) } : null;
+  }
+
+  /* Pourquoi une voix canadienne lit malgré tout, s'il y a lieu — pour que
+   * les Réglages le disent au lieu de laisser croire à un défaut :
+   *
+   *   choix-canadien   une voix canadienne a été choisie à la main, alors
+   *                    qu'une voix de France est là ;
+   *   france-en-ligne  la voix de France de l'appareil ne marche qu'en ligne,
+   *                    et l'on est hors réseau ;
+   *   pas-de-france    l'appareil n'a aucune voix de France (ni de voix
+   *                    française sans région) : il faut l'installer.
+   *
+   * Rend null quand la voix qui lit n'est pas canadienne. */
+  function avisCanadien() {
+    const v = retenue();
+    if (!v || regionDe(v) !== 'CA') return null;
+    const deFrance = voix.filter((x) => rangDe(x) < REGIONS.CA.rang && regionDe(x) !== 'CA');
+    if (choisie && deFrance.some(utilisable)) return 'choix-canadien';
+    if (deFrance.length && !deFrance.some(utilisable)) return 'france-en-ligne';
+    return 'pas-de-france';
   }
 
   /* Les voix françaises de l'appareil, dans l'ordre où le choix automatique
@@ -219,6 +240,7 @@
     disponible, PHRASE_D_ESSAI, dire, taire, bouton, regler, lister, possible,
     get retenue() { return decrire(retenue()); },
     get automatique() { return decrire(automatique()); },
+    get avisCanadien() { return avisCanadien(); },
     get pret() { return pret; },
     get choisie() { return choisie; },
   };

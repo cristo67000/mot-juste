@@ -231,5 +231,21 @@ cas('une voix disparue rend la main au choix automatique', v.retenue.nom === 'Th
 v = voixSimulees([windows('Microsoft Zira - English (United States)', 'en-US', true)]).Voix;
 cas('aucune voix française : rien n’est lu', v.retenue === null && v.possible() === false && v.dire('flic') === false);
 
+// L'avis des Réglages : quand une voix canadienne lit malgré tout, pourquoi.
+v = voixSimulees([android('Français France', 'fr-FR'), android('Français Canada', 'fr-CA')]).Voix;
+cas('voix de France présente : aucun avis', v.avisCanadien === null && v.retenue.region === 'FR', v.avisCanadien);
+v = voixSimulees([android('Français Canada', 'fr-CA'), android('English United States', 'en-US')]).Voix;
+cas('Android sans voix de France : avis « pas-de-france »', v.avisCanadien === 'pas-de-france', v.avisCanadien);
+const FRANCE_EN_LIGNE = [windows('Google français', 'fr-FR', false), windows('Microsoft Caroline - French (Canada)', 'fr-CA', true)];
+v = voixSimulees(FRANCE_EN_LIGNE, false).Voix;
+cas('hors ligne, voix de France en ligne seulement : avis « france-en-ligne »', v.avisCanadien === 'france-en-ligne', v.avisCanadien);
+v = voixSimulees(FRANCE_EN_LIGNE, true).Voix;
+cas('en ligne, la même : la voix de France lit, aucun avis', v.avisCanadien === null && v.retenue.nom === 'Google français', v.retenue);
+v = voixSimulees(IPHONE).Voix;
+v.regler({ voix: true, voixFr: { uri: 'com.apple.voice.compact.fr-CA.Amelie', nom: 'Amélie' } });
+cas('Amélie choisie à la main, Thomas présent : avis « choix-canadien »', v.avisCanadien === 'choix-canadien', v.avisCanadien);
+v.regler({ voix: true, voixFr: null });
+cas('retour à l’automatique : Thomas, aucun avis', v.avisCanadien === null && v.retenue.nom === 'Thomas', v.retenue);
+
 console.log(`\n${total - fautes}/${total} cas conformes`);
 process.exit(fautes ? 1 : 0);

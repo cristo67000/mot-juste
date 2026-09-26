@@ -323,6 +323,35 @@
     ligne.appendChild(menu);
     ligne.appendChild(bouton('bouton-discret', 'Essayer', () => Voix.dire(Voix.PHRASE_D_ESSAI)));
     zone.appendChild(ligne);
+    const avis = avisDeVoix(Voix.avisCanadien);
+    if (avis) zone.appendChild(avis);
+  }
+
+  /* Quand c'est malgré tout une voix canadienne qui lit, on dit pourquoi, et
+   * comment avoir une voix de France : l'application choisit la France
+   * d'office, mais ne peut pas installer une voix sur le téléphone. */
+  function avisDeVoix(cas) {
+    if (!cas) return null;
+    const bloc = element('div', 'avis-voix');
+    if (cas === 'choix-canadien') {
+      bloc.appendChild(element('p', null, 'Vous avez choisi une voix canadienne. Une voix de France est disponible sur cet appareil.'));
+      bloc.appendChild(bouton('bouton-discret', 'Revenir à la voix de France', () => regler('voixFr', null)));
+      return bloc;
+    }
+    bloc.appendChild(element('p', null, cas === 'france-en-ligne'
+      ? 'La voix de France de cet appareil ne marche qu’avec le réseau : hors ligne, c’est une voix canadienne qui lit. Pour l’avoir aussi hors ligne, installez-la :'
+      : 'Cet appareil n’a pas de voix de France : c’est une voix canadienne qui lit. Pour une voix de France, installez-la :'));
+    const etapes = element('ol', 'marche-a-suivre');
+    const liste = Installer.estApple()
+      ? ['Réglages › Accessibilité › Contenu énoncé › Voix › Français.',
+        'Touchez « Thomas » ou « Audrey » (France) et téléchargez la voix — la version « améliorée » est la plus naturelle.',
+        'Revenez ici : la voix de France est prise d’office.']
+      : ['Paramètres › Système › Langues › Synthèse vocale (selon le téléphone : « Sortie de la synthèse vocale »).',
+        'Touchez la roue dentée du moteur (Google), puis « Installer les données vocales » › Français.',
+        'Téléchargez « Français (France) », puis revenez ici : la voix de France est prise d’office.'];
+    for (const etape of liste) etapes.appendChild(element('li', null, etape));
+    bloc.appendChild(etapes);
+    return bloc;
   }
 
   async function dessinerReglages() {
@@ -333,7 +362,7 @@
     Sauvegarde.dessiner(e.zoneSauvegarde);
     Installer.dessiner();
     const version = (racine.MiseAJour && MiseAJour.version) || '';
-    e.versions.textContent = 'Application ' + (version || 'v1.0.1') + ' · dictionnaire du '
+    e.versions.textContent = 'Application ' + (version || 'v1.0.2') + ' · dictionnaire du '
       + Outils.dateLisible(manifeste.construit + 'T12:00:00') + '.';
     await dessinerDictionnaire();
   }
