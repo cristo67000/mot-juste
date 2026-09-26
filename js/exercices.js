@@ -116,7 +116,10 @@
     for (const e of Outils.melanger(tous)) {
       const x = premierSens(e, false);
       if (!x || x.s.v) continue;
-      const d = court(masquer(x.s.d, e.m), 160);
+      /* Pas de masque ici : le mot du leurre n'est pas à l'écran, il n'y a
+       * rien à cacher. Masqué, il laissait « Qui appartient à la … » — et la
+       * seule réponse sans points de suspension était la bonne. */
+      const d = court(x.s.d, 160);
       const k = Lexique.cle(d).slice(0, 30);
       if (d.length < 12 || vus.has(k)) continue;
       vus.add(k);

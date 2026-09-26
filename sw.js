@@ -25,7 +25,7 @@
  * données ne lui appartient pas : seul js/paquets.js y touche.
  */
 
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.0.1';
 const COQUILLE = 'mot-juste-coquille-' + VERSION;
 const PREFIXE_DONNEES = 'mot-juste-donnees-';
 
