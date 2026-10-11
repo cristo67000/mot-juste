@@ -1,7 +1,8 @@
 # Sources des données
 
-L'application ne rédige aucune définition. Tout ce qu'elle affiche vient de
-deux ressources libres, mises en forme par `build/` vers `data/`.
+L'application ne rédige aucune définition. Tout ce qu'elle affiche vient du
+Wiktionnaire ; trois autres ressources libres décident quels mots entrent et
+disent leur fréquence. `build/` met le tout en forme vers `data/`.
 
 ## 1. Le Wiktionnaire francophone
 
@@ -41,7 +42,9 @@ deux ressources libres, mises en forme par `build/` vers `data/`.
 - **Licence** : CC BY-SA 4.0.
 - **Ce qu'on en prend** : la fréquence de chaque lemme (moyenne films et
   livres, catégories additionnées) et de chaque forme. Elle décide :
-  - **quels mots entrent** : ceux que Lexique connaît (≈ 44 000) ;
+  - **quels mots entrent** d'abord : ceux que Lexique connaît (43 989) ; et
+    les noms qu'il a vus mais rangés sous un autre lemme (« tronçonneuse »
+    sous « tronçonneur », 1 622) ;
   - **quelles locutions entrent** : celles dont un mot retenu fait mention et
     dont chaque mot est attesté (au moins 0,5 par million ; 2 pour une
     locution nominale, qui est souvent un terme de métier) ;
@@ -49,11 +52,48 @@ deux ressources libres, mises en forme par `build/` vers `data/`.
   - **le socle** pré-chargé à l'installation (les plus fréquents, 20 Mo) ;
   - **les formes fléchies indexées** : seulement celles que Lexique a
     rencontrées, plus les pluriels et féminins que le lemme énumère — le
-    Wiktionnaire conjugue tout, jusqu'à « abaissassions ».
+    Wiktionnaire conjugue tout, jusqu'à « abaissassions » ;
+  - **à qui appartient une graphie** : « est » vaut ~ 2 600 par million sous
+    « être », ~ 20 sous « est », le point cardinal. La vedette « est » cède
+    donc sa graphie : dans une citation, « il est » mène à « être ». De même,
+    un rattachement du Wiktionnaire que Lexique dément et qui ne partage pas
+    l'initiale de la forme (« trompe » → « je ») est écarté.
 - ⚠ Lexique écrit « coeur », « oeil », « aujourd'hui » ; le Wiktionnaire
   « cœur », « œil », « aujourd’hui ». `construire.normal()` rapproche les deux :
   sans cela, l'œil, le cœur et la sœur n'avaient pas de fréquence et
   sortaient du dictionnaire.
+- ⚠ Lexique ne connaît pas « après-midi » : il le coupe en deux mots.
+
+## 3. Le dictionnaire orthographique de Grammalecte
+
+- **Quoi** : le dictionnaire Hunspell de [Grammalecte](https://grammalecte.net/)
+  (Olivier R. et coll.), version 7.7, tel que LibreOffice le distribue
+  (`fr_FR/dictionaries/fr.dic` du dépôt `LibreOffice/dictionaries`, épinglé
+  sur le commit `fe69197`) : 83 000 mots que les correcteurs de LibreOffice et
+  de Firefox reconnaissent.
+- **Licence** : MPL 2.0. Rien n'en est reproduit : il sert seulement à choisir.
+- **Ce qu'on en prend** : la liste de ses mots (ce qui précède « / » sur chaque
+  ligne). Un mot en minuscule du Wiktionnaire que Lexique ignore entre s'il y
+  figure : 26 839 mots savants, techniques ou récents — « incrémenter »,
+  « sérendipité », « désambiguïser », « cryptomonnaie », « après-midi ». Ses
+  mots à majuscule (gentilés, noms propres) sont laissés.
+- Une dernière voie s'y ajoute, sans source nouvelle : la **base** d'un mot
+  retenu, quand l'étymologie de celui-ci la nomme (1 027) — « postprandial »
+  vient « de prandial », « prandial » entre ; de même les préfixes
+  (« hémato- », « anthropo- ») que citent les étymologies.
+
+## 4. wordfreq
+
+- **Quoi** : [wordfreq](https://github.com/rspeer/wordfreq) 3.1.1 (Robyn
+  Speer), fréquences du français mesurées sur Wikipédia, la presse, des
+  sous-titres, des livres et le web. Ses données voyagent dans le paquet
+  Python ; `telecharger.py` les recopie dans `wordfreq-fr.tsv`.
+- **Licence** : code Apache 2.0, données CC BY-SA 4.0.
+- **Ce qu'on en prend** : la fréquence des mots que Lexique ne connaît pas,
+  pour leur bande (jamais « très courant » : un mot très courant serait dans
+  Lexique), et les formes fléchies de ces mots qu'il a rencontrées
+  (« incrémenté »). Un homographe de forme fléchie (« entrait », la poutre) n'a
+  pas de fréquence propre : il est dit « rare ».
 
 ## Ce qui n'a pas été repris
 

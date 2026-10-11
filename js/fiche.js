@@ -196,7 +196,7 @@
     if (api) infos.appendChild(element('span', 'api', '\\' + api + '\\'));
     if (e.b !== null && e.b !== undefined) {
       const b = element('span', 'frequence bande-' + e.b);
-      b.title = 'Fréquence d’usage (Lexique 3.83)';
+      b.title = 'Fréquence d’usage (Lexique 3.83, wordfreq)';
       b.appendChild(element('span', 'points', '●●●●'.slice(0, 4 - e.b) + '○○○○'.slice(0, e.b)));
       b.appendChild(element('span', null, ' ' + BANDES[e.b]));
       infos.appendChild(b);
@@ -447,7 +447,7 @@
     a.rel = 'noopener';
     a.target = '_blank';
     p.appendChild(a);
-    p.appendChild(document.createTextNode(' — licence CC BY-SA 4.0. Fréquence : Lexique 3.83.'));
+    p.appendChild(document.createTextNode(' — licence CC BY-SA 4.0. Fréquence : Lexique 3.83 ou wordfreq.'));
     return p;
   }
 

@@ -15,7 +15,7 @@
  *
  * ── Pourquoi l'index reste une chaîne ───────────────────────────────────────
  *
- * 76 000 lignes découpées en autant de chaînes JavaScript coûteraient
+ * 106 000 lignes découpées en autant de chaînes JavaScript coûteraient
  * plusieurs mégaoctets rien qu'en en-têtes d'objets, sur un téléphone qui n'en
  * a pas de trop. On garde le texte tel qu'il est arrivé et la position de
  * chaque début de ligne dans un Int32Array — 4 octets par entrée. La
@@ -131,7 +131,7 @@
   }
 
   function ligneEnResultat(ligne) {
-    const [k, mot, tranche, bande, nature, apercu] = ligne;
+    const [k, mot, tranche, bande, nature, apercu, cede] = ligne;
     return {
       mot, cle: k,
       tranche: Number(tranche),
@@ -139,6 +139,7 @@
       nature: nature || '',
       apercu: apercu || '',
       expression: mot.indexOf(' ') !== -1 || /^loc/.test(nature || ''),
+      cede: cede || null,
       via: null,
     };
   }
@@ -212,7 +213,19 @@
     if (!k) return null;
     const direct = [];
     collecter(k, true, direct, 8);
-    if (direct.length) return meilleur(direct, graphie);
+    const choisi = direct.length ? meilleur(direct, graphie) : null;
+    /* Une vedette qui « cède » (voir build/construire.py) est aussi la forme
+     * d'un autre mot, qu'elle nomme : « entrait », la poutre, cède à
+     * « entrer » ; « est », le point cardinal, à « être ». Dans un texte, la
+     * forme mène à ce lemme, s'il est au moins aussi courant. */
+    if (choisi && choisi.cede) {
+      const lemme = vedette(choisi.cede);
+      if (lemme && lemme.bande <= choisi.bande) {
+        lemme.via = graphie;
+        return lemme;
+      }
+    }
+    if (choisi) return choisi;
     for (const lemme of lemmes(k)) {
       const lot = [];
       collecter(lemme, true, lot, 8);
@@ -232,12 +245,15 @@
    *   2  la frappe est le début de la vedette             « chev »    → cheval
    *
    * Le rang 1 passe avant le rang 2 : qui tape « fit » veut « faire », avant
-   * « fitness ». Ensuite les mots les plus courants, puis les plus courts. */
+   * « fitness ». Ensuite les mots les plus courants, puis le mot tapé tel
+   * quel, puis les plus courts : « entrait » donne entrer, puis la poutre ;
+   * « tronçonneuse » la machine, puis tronçonneur. */
   function ordonner(a, b) {
     if (a.rang !== b.rang) return a.rang - b.rang;
     if (!!a.perso !== !!b.perso) return a.perso ? -1 : 1;
     if (a.expression !== b.expression) return a.expression ? 1 : -1;
     if (a.bande !== b.bande) return a.bande - b.bande;
+    if (!!a.tape !== !!b.tape) return a.tape ? -1 : 1;
     if (a.cle.length !== b.cle.length) return a.cle.length - b.cle.length;
     return a.cle < b.cle ? -1 : (a.cle > b.cle ? 1 : 0);
   }
@@ -255,6 +271,7 @@
         if (vus.has(empreinte)) continue;
         vus.add(empreinte);
         r.rang = r.exact ? 0 : rang;
+        r.tape = r.cle === k;
         r.via = via || r.via || null;
         resultats.push(r);
       }

@@ -87,12 +87,16 @@ def main():
         signaler("mots.idx n'est pas trié")
     tranches = {}
     vedettes = []
+    cibles = []
     for ligne in lignes:
         champs_ = ligne.split("\t")
-        if len(champs_) != 6:
+        # Un 7ᵉ champ nomme le lemme auquel la vedette cède sa graphie.
+        if len(champs_) not in (6, 7) or (len(champs_) == 7 and not champs_[6]):
             signaler(f"ligne d'index mal formée : {ligne[:80]!r}")
             continue
-        k, mot, tranche, bande, nature, apercu = champs_
+        k, mot, tranche, bande, nature, apercu = champs_[:6]
+        if len(champs_) == 7:
+            cibles.append((mot, champs_[6]))
         vedettes.append(mot)
         if k != cle(mot):
             signaler(f"clé {k!r} ≠ cle({mot!r})")
@@ -115,7 +119,12 @@ def main():
                             marques_fausses += 1
     if marques_fausses:
         signaler(f"{marques_fausses} marques de citation hors du texte")
-    print(f"  ✓ mots.idx : {len(lignes)} vedettes, {len(tranches)} tranches relues")
+    toutes_vedettes = set(vedettes)
+    perdues = [(m, c) for m, c in cibles if c not in toutes_vedettes or c == m]
+    if perdues:
+        signaler(f"{len(perdues)} vedettes cèdent à un lemme absent ou à elles-mêmes, ex. {perdues[:3]}")
+    print(f"  ✓ mots.idx : {len(lignes)} vedettes, {len(tranches)} tranches relues, "
+          f"{len(cibles)} cèdent à un lemme")
 
     # formes.idx
     connues = set(cles_idx)

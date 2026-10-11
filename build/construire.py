@@ -6,12 +6,16 @@ Construit le dictionnaire de l'application à partir des extraits.
 ── Ce qui entre, ce qui sort ───────────────────────────────────────────────
 
 Entrent : `sources/sections.jsonl` et `sources/formes.tsv` (voir extraire.py),
-et `sources/Lexique383.tsv`, la base de fréquences de Lexique 3.83.
+`sources/Lexique383.tsv`, la base de fréquences de Lexique 3.83,
+`sources/grammalecte-fr.dic`, le dictionnaire orthographique de Grammalecte,
+et `sources/wordfreq-fr.tsv`, les fréquences de wordfreq (voir telecharger.py).
 
 Sort, dans `data/dico/` :
 
   mots.idx          une ligne par vedette, triée par clé :
                     clé ⇥ vedette ⇥ tranche ⇥ bande ⇥ nature ⇥ aperçu
+                    [⇥ lemme auquel la vedette cède sa graphie — voir
+                    `cedent` dans construire()]
   formes.idx        forme fléchie ⇥ n,reste|n,reste
                     → clé du lemme = clé de la forme[:n] + reste
   expressions.idx   mot ⇥ vedette|vedette|…  les locutions et expressions
@@ -26,10 +30,44 @@ Le Wiktionnaire décrit 390 000 mots français. Les deux tiers sont des
 gentilés de communes, des noms d'espèces, des termes de métier : un
 dictionnaire de poche n'en a que faire, et un téléphone non plus.
 
-Le tri se fait sur l'usage réel, mesuré par Lexique 3.83 (sous-titres de films
-et livres, 47 000 lemmes) : un mot entre s'il y paraît. Cela garde
-« atermoiement », « pusillanime », « procrastination », et laisse
-« splanchnologie ».
+Un mot entre par l'une de quatre voies — la première qui s'applique est
+notée, et `rapport.txt` les compte :
+
+  lexique      il paraît dans Lexique 3.83 (sous-titres de films et livres,
+               47 000 lemmes) : l'usage réel. Cela garde « atermoiement »,
+               « pusillanime », « procrastination ».
+  grammalecte  il est dans le dictionnaire orthographique de Grammalecte,
+               celui des correcteurs de LibreOffice et de Firefox : 83 000
+               mots qu'une équipe a jugés de la langue, gentilés de communes
+               et noms d'espèces en moins. C'est la voie des mots savants,
+               techniques ou récents que des films et des romans d'avant 2010
+               ne disent pas : « incrémenter », « sérendipité », « wokisme »,
+               « cryptomonnaie » — et « après-midi », que Lexique coupe en
+               deux.
+  base         un mot retenu en dérive, et son étymologie le nomme :
+               « postprandial » vient « De prandial », donc « prandial »
+               entre. On ne lit pas une fiche dont l'étymologie mène à un
+               mot muet.
+  nom          Lexique l'a vu employé comme nom, mais rangé sous un autre
+               lemme : il compte « tourterelle » sous « tourtereau »,
+               « tronçonneuse » sous « tronçonneur », « vacances » sous
+               « vacance ». Le Wiktionnaire en fait un nom à part entière,
+               avec son sens. Quand sa fiche nomme ce lemme, il prend la
+               fréquence que Lexique donne à la forme ; sinon, ce peut être
+               un homographe de hasard — « amis », langue de Taïwan, n'est
+               pas le pluriel d'« ami » —, et il est dit « rare ».
+
+Le reste — 230 000 mots du Wiktionnaire — n'entre pas : gentilés,
+espèces, mots d'un seul auteur (« égoïstiser »), et ce que seul un spécialiste
+cherche. « splanchnologie » entre par Grammalecte ; « fourmillesque » non.
+
+La fréquence d'un mot hors des lemmes de Lexique est celle que Lexique donne à
+sa graphie employée comme nom, s'il l'a vue, sinon celle de wordfreq
+(Wikipédia, presse, sous-titres, web), qui ne donne que l'ordre de grandeur :
+sa bande ne monte jamais à « très courant », et les mots venus par wordfreq
+vont dans la suite, pas dans le socle. Un homographe de forme fléchie —
+« entrait », la poutre, et « il entrait » — n'a pas de fréquence propre : il
+est dit « rare », et sa graphie, dans un texte, mène au verbe.
 
 Les locutions et expressions — « à petit feu », « tomber dans les pommes » —
 n'ont pas de fréquence dans Lexique, qui ne compte que des mots. On les prend
@@ -73,6 +111,8 @@ import shutil
 import sys
 import time
 from pathlib import Path
+
+import unicodedata
 
 import commun
 from commun import cle
@@ -123,6 +163,17 @@ def bande_de(frequence):
     return 3
 
 
+# Les mots venus d'ailleurs que Lexique : wordfreq ne donne qu'un ordre de
+# grandeur, mesuré sur d'autres textes. Un mot très courant serait dans
+# Lexique ; celui qui n'y est pas ne monte pas plus haut que « courant », et
+# reste hors du socle, qui garde les mots dont on est sûr.
+BANDE_MIN_AUTRES = 1
+PRIORITE_MAX_AUTRES = 1.0
+# Une forme fléchie d'un mot venu d'ailleurs entre dans l'index si wordfreq
+# l'a rencontrée au moins une fois sur cent millions de mots (zipf 1).
+ZIPF_FORME_MIN = 1.0
+
+
 # Les mots-outils ne rangent pas les expressions : sous « de », il y en aurait
 # huit mille, et personne ne cherche une expression par son « de ».
 MOTS_OUTILS = set("""
@@ -147,6 +198,15 @@ def lire_lexique():
     """
     par_lemme = collections.defaultdict(float)
     par_forme = collections.defaultdict(float)
+    # Les graphies que Lexique a vues employées comme noms, avec leur
+    # fréquence et le lemme sous lequel il les range : « tourterelle »,
+    # 1,4 par million, sous « tourtereau ». Voir la voie « nom » de choisir().
+    noms = collections.defaultdict(float)
+    lemmes_des_noms = collections.defaultdict(set)
+    # Pour chaque graphie, sa fréquence sous chacun de ses lemmes : « est »
+    # vaut ~ 2 600 par million sous « être », ~ 20 sous « est » (le point
+    # cardinal). Voir `cedent` dans construire().
+    repartition = collections.defaultdict(lambda: collections.defaultdict(float))
     vus = set()
     with open(SOURCES / "Lexique383.tsv", encoding="utf-8") as f:
         lecteur = csv.reader(f, delimiter="\t", quoting=csv.QUOTE_NONE)
@@ -156,12 +216,46 @@ def lire_lexique():
             lemme, categorie, forme = ligne[i["lemme"]], ligne[i["cgram"]], ligne[i["ortho"]]
             f_forme = (float(ligne[i["freqfilms2"]] or 0) + float(ligne[i["freqlivres"]] or 0)) / 2
             par_forme[forme] += f_forme
+            repartition[forme][lemme] += f_forme
+            if categorie == "NOM" and forme != lemme:
+                noms[forme] += f_forme
+                lemmes_des_noms[forme].add(lemme)
             if (lemme, categorie) in vus:
                 continue
             vus.add((lemme, categorie))
             par_lemme[lemme] += (float(ligne[i["freqlemfilms2"]] or 0)
                                  + float(ligne[i["freqlemlivres"]] or 0)) / 2
-    return par_lemme, par_forme
+    return par_lemme, par_forme, noms, lemmes_des_noms, repartition
+
+
+def lire_grammalecte():
+    """Les mots du dictionnaire orthographique de Grammalecte (Hunspell).
+
+    Une ligne par mot, « focal/W. » : le mot, puis, après la barre, les
+    drapeaux qui en engendrent les formes — seul le mot nous sert. La
+    première ligne donne leur nombre. Les apostrophes y sont droites ou
+    typographiques selon les mots : on garde les deux.
+    """
+    mots = set()
+    with open(SOURCES / "grammalecte-fr.dic", encoding="utf-8") as f:
+        next(f)
+        for ligne in f:
+            mot = unicodedata.normalize("NFC", ligne.split("/")[0].strip())
+            if mot:
+                mots.add(mot)
+                mots.add(mot.replace("'", "’"))
+    return mots
+
+
+def lire_wordfreq():
+    """zipf par mot : log10 des occurrences par milliard, 3 = une par million."""
+    zipf = {}
+    with open(SOURCES / "wordfreq-fr.tsv", encoding="utf-8") as f:
+        for ligne in f:
+            mot, _, valeur = ligne.rstrip("\n").partition("\t")
+            if valeur:
+                zipf[mot] = float(valeur)
+    return zipf
 
 
 def normal(mot):
@@ -185,6 +279,7 @@ def jetons(texte):
 def premiere_lecture():
     meta = {}
     renvois = collections.defaultdict(set)   # expression → mots qui y renvoient
+    derives = collections.defaultdict(set)   # « prandial » → {« postprandial », …}
     with open(SOURCES / "sections.jsonl", encoding="utf-8") as f:
         for ligne in f:
             s = json.loads(ligne)
@@ -195,7 +290,43 @@ def premiere_lecture():
             for champ in ("der", "prov", "syn", "ant", "rel"):
                 for lien in s.get(champ, ()):
                     renvois[lien[0]].add(mot)
-    return meta, renvois
+            if " " not in mot:
+                for lien in s.get("der", ()):
+                    if " " not in lien[0]:
+                        derives[mot].add(lien[0])
+    return meta, renvois, derives
+
+
+def textes(voulus):
+    """Pour chaque mot voulu : son étymologie, ses définitions, ses renvois
+    (« Pluriel de… »), en un texte. De quoi voir s'il nomme un autre mot."""
+    morceaux = collections.defaultdict(list)
+    definitions = collections.defaultdict(list)
+    with open(SOURCES / "sections.jsonl", encoding="utf-8") as f:
+        for ligne in f:
+            debut = ligne.find('"m":"') + 5
+            if ligne[debut:ligne.find('","', debut)] not in voulus:
+                continue
+            s = json.loads(ligne)
+            morceaux[s["m"]].extend(s.get("et", ()))
+            for sens in s["s"]:
+                definitions[s["m"]].append(sens["d"])
+                morceaux[s["m"]].append(sens["d"])
+                morceaux[s["m"]].extend(sens.get("v", ()))
+    return {mot: " ".join(m) for mot, m in morceaux.items()}, definitions
+
+
+def nomme(texte, mot):
+    """Le texte cite-t-il ce mot, en entier, ou une forme qui commence par
+    lui (« prandial » dans « prandiale ») ?"""
+    return re.search(r"(?<!\w)" + re.escape(mot) + r"(?!\w)", texte) is not None \
+        or re.search(r"(?<!\w)" + re.escape(mot) + r"(?:e|s|es|x)(?!\w)", texte) is not None
+
+
+# Une fiche qui ne fait que renvoyer — « Pluriel de… », « Variante de… » —
+# ne mérite pas d'être une vedette à part : la forme mène déjà au lemme.
+RE_RENVOI = re.compile(r"^(Féminin|Pluriel|Masculin|Variante|Forme|Ancienne orthographe"
+                       r"|Orthographe|Autre orthographe)\b.*\bde\b", re.I)
 
 
 def est_expression(mot, meta_mot):
@@ -205,21 +336,96 @@ def est_expression(mot, meta_mot):
     return any(t.startswith(("Locution", "Proverbe")) for t in meta_mot["titres"])
 
 
-def choisir(meta, renvois, par_lemme, par_forme):
-    """Rend {vedette: priorité}, et l'ensemble des expressions.
+def choisir(meta, renvois, derives, src):
+    """Rend {vedette: priorité}, l'ensemble des expressions, {vedette: bande}
+    pour les mots venus d'ailleurs que Lexique, {vedette: voie} et la liste
+    des noms entrés sans lien visible avec leur lemme. Les voies : voir en
+    tête du fichier.
 
     La priorité décide de ce qui va dans le socle. Pour un mot, c'est sa
     fréquence. Pour une expression, celle du plus rare de ses mots, divisée :
     « tomber dans les pommes » vaut ce que vaut un mot d'une fréquence de 1,
     ce qui la met au socle ; « mouton des plateaux de l'Est » n'y entre pas.
     """
-    choisis = {}
-    for mot, m in meta.items():
-        if est_expression(mot, m):
-            continue
+    par_lemme, par_forme = src["lemmes"], src["formes"]
+    choisis, bandes, voies = {}, {}, {}
+    simples = [mot for mot, m in meta.items() if not est_expression(mot, m)]
+
+    def frequence_libre(mot):
+        """La fréquence d'un mot absent des lemmes de Lexique.
+
+        Lexique a pu le voir employé comme nom, rangé sous un autre lemme
+        (« lunettes » sous « lunette ») : c'est sa fréquence de nom. Sinon
+        wordfreq — sauf pour un homographe de forme fléchie, que wordfreq
+        compte avec la forme (« entrait », la poutre, et « il entrait »).
+        """
+        k = mot if mot in src["noms"] else normal(mot)
+        if src["noms"].get(k):
+            return src["noms"][k]
+        if mot in src["homographes"]:
+            return 0.0
+        zipf = src["wordfreq"].get(mot.lower().replace("’", "'"))
+        return 10 ** (zipf - 3) if zipf else 0.0
+
+    def prendre(mot, voie, frequence, priorite=None):
+        choisis[mot] = min(frequence, PRIORITE_MAX_AUTRES) if priorite is None else priorite
+        bandes[mot] = max(bande_de(frequence), BANDE_MIN_AUTRES)
+        voies[mot] = voie
+
+    # 1. Lexique.
+    for mot in simples:
         frequence = par_lemme.get(mot) or par_lemme.get(normal(mot)) or 0.0
         if frequence > 0:
             choisis[mot] = frequence
+            voies[mot] = "lexique"
+
+    # 2. Grammalecte. Ses mots à majuscule sont des gentilés (« Strasbourgeois »)
+    # ou des noms propres : l'adjectif, en minuscule, suffit.
+    for mot in simples:
+        if mot not in choisis and mot[:1].islower() and mot in src["grammalecte"]:
+            prendre(mot, "grammalecte", frequence_libre(mot))
+
+    # Les voies 3 et 4 demandent de lire des fiches : on réunit les candidats,
+    # puis une seule lecture.
+    bases = {}
+    for mot in simples:
+        if mot in choisis or not mot[:1].islower():
+            continue
+        fils = derives.get(mot, set()) & choisis.keys()
+        if fils:
+            bases[mot] = fils
+    noms = {}
+    for mot in simples:
+        if mot in choisis or "Nom commun" not in meta[mot]["titres"]:
+            continue
+        cle_lexique = mot if mot in src["noms"] else normal(mot)
+        if src["noms"].get(cle_lexique, 0) > 0:
+            noms[mot] = cle_lexique
+    texte, definitions = textes(set(noms) | set(bases) | {f for v in bases.values() for f in v})
+
+    # 3. La base d'un dérivé retenu, quand l'étymologie du dérivé la nomme.
+    for mot, fils in bases.items():
+        if any(nomme(texte.get(f, ""), mot) for f in fils):
+            prendre(mot, "base", frequence_libre(mot))
+
+    # 4. Un nom que Lexique range sous un autre lemme, sauf simple renvoi
+    # (« Pluriel de… »). Quand sa fiche nomme ce lemme — « lunettes » :
+    # « Ensemble de deux verres de lunette… » —, il prend la fréquence que
+    # Lexique donne à la forme. Sinon, rien ne dit que cette fréquence soit la
+    # sienne : « amis », langue de Taïwan, n'a pas celle du pluriel d'« ami ».
+    # Il entre quand même, dit rare.
+    sans_lien = []
+    for mot, cle_lexique in noms.items():
+        if mot in choisis or all(RE_RENVOI.match(d) for d in definitions.get(mot, ())):
+            continue
+        t = texte.get(mot, "")
+        lemmes = src["lemmes_des_noms"][cle_lexique]
+        if any(nomme(t, l) or nomme(t, l.replace("oe", "œ")) for l in lemmes):
+            frequence = src["noms"][cle_lexique]
+            prendre(mot, "nom", frequence, priorite=frequence)
+        else:
+            prendre(mot, "nom", 0.0)
+            sans_lien.append(mot)
     mots = set(choisis)
 
     expressions = set()
@@ -249,7 +455,7 @@ def choisir(meta, renvois, par_lemme, par_forme):
             valeur *= 2
         choisis[mot] = min(valeur, 8.0)
         expressions.add(mot)
-    return choisis, expressions
+    return choisis, expressions, bandes, voies, sans_lien
 
 
 # --- Deuxième lecture : les entrées ------------------------------------------
@@ -538,9 +744,10 @@ def json_compact(objet):
     return json.dumps(objet, ensure_ascii=False, separators=(",", ":"))
 
 
-def construire(meta, renvois, par_lemme, par_forme, formes_brutes, rapport):
+def construire(meta, renvois, derives, src, formes_brutes, rapport):
     debut = time.time()
-    choisis, expressions = choisir(meta, renvois, par_lemme, par_forme)
+    par_forme = src["formes"]
+    choisis, expressions, bandes, voies, sans_lien = choisir(meta, renvois, derives, src)
     sections = lire_sections(choisis.keys())
     inconnues = collections.Counter()
 
@@ -550,8 +757,8 @@ def construire(meta, renvois, par_lemme, par_forme, formes_brutes, rapport):
             continue
         expression = mot in expressions
         regles = EXPRESSIONS if expression else MOTS
-        entree = entree_de(mot, sections[mot], bande_de(priorite * (15 if expression else 1)),
-                           regles, inconnues)
+        bande = bandes[mot] if mot in bandes else bande_de(priorite * (15 if expression else 1))
+        entree = entree_de(mot, sections[mot], bande, regles, inconnues)
         if expression:
             entree["x"] = 1
         entrees.append((priorite, entree))
@@ -573,6 +780,44 @@ def construire(meta, renvois, par_lemme, par_forme, formes_brutes, rapport):
         shutil.rmtree(DOSSIER)
     DOSSIER.mkdir(parents=True)
 
+    # Les vedettes qui « cèdent » — 7ᵉ champ de mots.idx, le lemme auquel elles
+    # cèdent : dans un texte, leur graphie mène plutôt à ce lemme, dont elle est
+    # aussi la forme, s'il est au moins aussi courant (voir Lexique.resoudre
+    # dans js/lexique.js). Le lemme est nommé, et non cherché par l'index des
+    # formes, qui mêle des renvois douteux (« trompe » y mène à « je »). Deux
+    # cas :
+    #
+    #   - un mot venu d'ailleurs que Lexique qui est aussi une forme fléchie :
+    #     « entrait » (la poutre) et « il entrait », « anime » (le dessin
+    #     animé japonais) et « il anime » ;
+    #   - un mot de Lexique dont la graphie, dans Lexique même, appartient
+    #     surtout à un autre lemme : « est » (le point cardinal) et « il est »,
+    #     « vit » et « il vit », « doit » et « il doit ».
+    #
+    # Sans cela, chaque « il est » d'une citation menait à l'Orient.
+    cedent = {}
+    normaux = {normal(v): v for v in choisis if v not in expressions}
+
+    def poids_du_lemme(forme, lemme):
+        # Ce que Lexique attribue de la forme à ce lemme, sinon sa priorité.
+        part = src["repartition"].get(normal(forme), {})
+        return (part.get(normal(lemme), 0.0), choisis.get(lemme, 0.0))
+
+    for forme, lemme in formes_brutes:
+        if forme in bandes and lemme != forme and lemme in choisis and lemme not in expressions:
+            if forme not in cedent or poids_du_lemme(forme, lemme) > poids_du_lemme(forme, cedent[forme]):
+                cedent[forme] = lemme
+    for mot in choisis:
+        if voies.get(mot) != "lexique":
+            continue
+        n = normal(mot)
+        part = src["repartition"].get(n)
+        if not part:
+            continue
+        autres = [(f, lemme) for lemme, f in part.items() if lemme != n and lemme in normaux]
+        if autres and max(autres)[0] > part.get(n, 0.0):
+            cedent[mot] = normaux[max(autres)[1]]
+
     # Chaque groupe est trié par clé avant d'être tranché : une tranche couvre
     # alors une plage alphabétique, et les homographes de clé voisinent.
     lignes_index = []
@@ -583,6 +828,9 @@ def construire(meta, renvois, par_lemme, par_forme, formes_brutes, rapport):
         for lecture in e["l"]:
             for forme in lecture.get("f", ()):
                 formes_du_lemme.add((e["m"], forme[0]))
+    presentes = {e["m"] for p, e in entrees}
+    cedent = {mot: lemme for mot, lemme in cedent.items()
+              if mot in presentes and lemme in presentes and "\t" not in lemme}
     numero = 0
     for groupe, lot_groupe in (("socle", socle), ("suite", suite)):
         lot_groupe.sort(key=lambda e: (cle(e["m"]), e["b"], e["m"]))
@@ -594,8 +842,10 @@ def construire(meta, renvois, par_lemme, par_forme, formes_brutes, rapport):
             for e in lot:
                 vedettes.add(e["m"])
                 nature = abrege(e["l"][0]["nat"]) if e["l"] else ""
-                lignes_index.append((cle(e["m"]), e["b"], "\t".join(
-                    [cle(e["m"]), e["m"], str(numero), str(e["b"]), nature, apercu(e)])))
+                champs_ = [cle(e["m"]), e["m"], str(numero), str(e["b"]), nature, apercu(e)]
+                if e["m"] in cedent:
+                    champs_.append(cedent[e["m"]])
+                lignes_index.append((cle(e["m"]), e["b"], "\t".join(champs_)))
             numero += 1
     lignes_index.sort(key=lambda l: (l[0], l[1]))
     ecrire(DOSSIER / "mots.idx", "\n".join(l[2] for l in lignes_index) + "\n")
@@ -610,11 +860,31 @@ def construire(meta, renvois, par_lemme, par_forme, formes_brutes, rapport):
     # Lexique n'a jamais vue ni dans un film ni dans un livre ne sera pas
     # tapée non plus. Les pluriels et féminins que le lemme énumère lui-même
     # restent tous : ils sont peu nombreux et on les cherche.
+    #
+    # Un mot venu d'ailleurs que Lexique n'a pas ses formes dans Lexique :
+    # pour lui, c'est wordfreq qui dit si l'on écrit « incrémenté ».
+    #
+    # Le Wiktionnaire mêle à ses renvois des rattachements de hasard —
+    # « trompe » à « je », « dû » à « le », « vis » à « bis », « jumelle » à
+    # « division » — : on écarte celui qui ne partage pas même l'initiale de
+    # la forme quand Lexique range cette forme sous d'autres vedettes. Les
+    # formes supplétives restent, Lexique les connaît : « yeux » sous « œil »,
+    # « fut » sous « être ». « ma » garde « mon » : même initiale.
+    normaux_vedettes = {normal(v) for v in vedettes}
     formes = collections.defaultdict(set)
+    ecartees = 0
     for forme, lemme in formes_brutes:
         if lemme not in vedettes or " " in forme or lemme in expressions:
             continue
-        if not (par_forme.get(forme) or par_forme.get(normal(forme)))                 and (lemme, forme) not in formes_du_lemme:
+        part = src["repartition"].get(normal(forme))
+        if part and normal(lemme) not in part and cle(forme)[:1] != cle(lemme)[:1] \
+                and any(l in normaux_vedettes for l in part):
+            ecartees += 1
+            continue
+        vue = par_forme.get(forme) or par_forme.get(normal(forme))
+        if not vue and lemme in bandes:
+            vue = src["wordfreq"].get(forme.lower().replace("’", "'"), 0) >= ZIPF_FORME_MIN
+        if not vue and (lemme, forme) not in formes_du_lemme:
             continue
         k_forme, k_lemme = cle(forme), cle(lemme)
         if not k_forme or k_forme == k_lemme:
@@ -671,14 +941,32 @@ def construire(meta, renvois, par_lemme, par_forme, formes_brutes, rapport):
     rapport.append(f"  suite : {len(suite)} vedettes, {len(fichiers['suite'])} tranches, "
                    f"{commun.humain(resume['octets']['suite'])}")
     rapport.append(f"  index : {commun.humain(resume['octets']['index'])} — "
-                   f"{len(lignes_formes)} formes fléchies, {len(lignes_expr)} mots d'expressions")
-    bandes = collections.Counter(e["b"] for p, e in entrees)
-    rapport.append("  bandes : " + ", ".join(f"{b}={bandes[b]}" for b in sorted(bandes)))
+                   f"{len(lignes_formes)} formes fléchies, {len(lignes_expr)} mots d'expressions"
+                   f" ({ecartees} rattachements de formes démentis par Lexique)")
+    par_bande = collections.Counter(e["b"] for p, e in entrees)
+    rapport.append("  bandes : " + ", ".join(f"{b}={par_bande[b]}" for b in sorted(par_bande)))
+    par_voie = collections.Counter(voies[e["m"]] for p, e in entrees if e["m"] in voies)
+    rapport.append("  voies d'entrée des mots : " + ", ".join(
+        f"{v}={par_voie[v]}" for v in ("lexique", "grammalecte", "base", "nom"))
+        + f" — {len(cedent)} vedettes cèdent leur graphie à un lemme")
+    rapport.append("    par exemple : " + ", ".join(
+        f"{m} → {cedent[m]}" for m in ("est", "vit", "doit", "sais", "entrait", "anime", "amis")
+        if m in cedent))
+    for voie in ("base", "nom"):
+        exemples = sorted((e["m"] for p, e in entrees if voies.get(e["m"]) == voie), key=cle)
+        rapport.append(f"    {voie} : " + ", ".join(exemples[::max(1, len(exemples) // 40)][:40]))
+    rapport.append(f"    dont noms sans lien visible avec leur lemme (dits rares) : {len(sans_lien)} — "
+                   + ", ".join(sorted(sans_lien, key=lambda m: -src["noms"].get(m, 0))[:40]))
+    octets_voie = collections.Counter()
+    for p, e in entrees:
+        octets_voie[voies.get(e["m"], "expression")] += len(json_compact(e).encode("utf-8"))
+    rapport.append("  poids des entrées par voie : " + ", ".join(
+        f"{v} {commun.humain(o)}" for v, o in octets_voie.most_common()))
     if inconnues:
         rapport.append("  étiquettes non traduites (les plus fréquentes) : " + ", ".join(
             f"{k}×{n}" for k, n in inconnues.most_common(25)))
     rapport.append(f"  construit en {time.time() - debut:.0f} s")
-    print("\n".join(rapport[-8:]), flush=True)
+    print("\n".join(rapport[1:]), flush=True)
     return resume, [e for p, e in entrees], set(e["m"] for e in socle)
 
 
@@ -707,9 +995,13 @@ def main():
     debut = time.time()
     rapport = [f"Construction du {datetime.date.today().isoformat()}"]
     print("Lexique 3.83…", flush=True)
-    par_lemme, par_forme = lire_lexique()
+    par_lemme, par_forme, noms, lemmes_des_noms, repartition = lire_lexique()
+    print("Grammalecte, wordfreq…", flush=True)
+    src = {"lemmes": par_lemme, "formes": par_forme, "noms": noms,
+           "lemmes_des_noms": lemmes_des_noms, "repartition": repartition,
+           "grammalecte": lire_grammalecte(), "wordfreq": lire_wordfreq()}
     print("Première lecture des sections…", flush=True)
-    meta, renvois = premiere_lecture()
+    meta, renvois, derives = premiere_lecture()
     print("Formes fléchies…", flush=True)
     formes_brutes = []
     with open(SOURCES / "formes.tsv", encoding="utf-8") as f:
@@ -717,10 +1009,10 @@ def main():
             morceaux = ligne.rstrip("\n").split("\t")
             if len(morceaux) >= 2:
                 formes_brutes.append((morceaux[0], morceaux[1]))
+    src["homographes"] = {forme for forme, lemme in formes_brutes if forme != lemme}
 
     print("Dictionnaire…", flush=True)
-    resume, entrees, socle = construire(meta, renvois, par_lemme, par_forme, formes_brutes,
-                                        rapport)
+    resume, entrees, socle = construire(meta, renvois, derives, src, formes_brutes, rapport)
     du_jour = mots_du_jour(entrees, socle)
     rapport.append(f"  {len(du_jour)} mots du jour possibles")
     for ancien in ("noyau", "complet"):
@@ -732,6 +1024,8 @@ def main():
         "sources": {
             "wiktionnaire": "Wiktionnaire, extraction wiktextract publiée par kaikki.org",
             "lexique": "Lexique 3.83",
+            "grammalecte": "Dictionnaire orthographique de Grammalecte 7.7 (choix des mots)",
+            "wordfreq": "wordfreq 3.1.1 (fréquence des mots absents de Lexique)",
         },
         "bandes": ["très courant", "courant", "moins courant", "rare"],
         "dico": resume,

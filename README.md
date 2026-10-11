@@ -92,25 +92,43 @@ rien n'est effacé.
 
 ## Le dictionnaire
 
-**76 877 vedettes** : 43 989 mots et 32 888 locutions et expressions, tirés du
-**Wiktionnaire** (extraction wiktextract, CC BY-SA 4.0). Le choix des mots se
-fait sur l'usage réel mesuré par **Lexique 3.83** (films et livres) : un mot
-entre s'il y paraît. Cela garde *atermoiement* et *pusillanime*, et laisse les
-gentilés de communes et les noms d'espèces qui font les deux tiers du
-Wiktionnaire. Une locution entre quand un mot retenu y renvoie et que chacun de
-ses mots est connu.
+**106 601 vedettes** : 73 477 mots et 33 124 locutions et expressions, tirés
+du **Wiktionnaire** (extraction wiktextract, CC BY-SA 4.0). Un mot entre :
+
+- s'il paraît dans **Lexique 3.83**, l'usage réel mesuré dans des films et des
+  livres (43 989 mots) — *atermoiement*, *pusillanime* ;
+- ou s'il figure au **dictionnaire orthographique de Grammalecte**, celui des
+  correcteurs de LibreOffice et de Firefox (26 839 mots de plus) : les mots
+  savants, techniques ou récents que films et romans ne disent pas —
+  *incrémenter*, *sérendipité*, *désambiguïser*, *cryptomonnaie*, *wokisme* —,
+  et *après-midi*, que Lexique coupe en deux ;
+- ou si un mot retenu en dérive et le nomme dans son étymologie (1 027) :
+  *postprandial* vient « de *prandial* », donc *prandial* entre ;
+- ou si Lexique l'a vu employé comme nom mais rangé sous un autre lemme
+  (1 622) : *tronçonneuse* sous *tronçonneur*, *tourterelle* sous
+  *tourtereau*, quand le Wiktionnaire en fait un mot à part.
+
+Restent dehors les gentilés de communes, les noms d'espèces et les mots d'un
+seul auteur — 230 000 mots du Wiktionnaire. Une locution entre quand un mot
+retenu y renvoie et que chacun de ses mots est connu.
+
+La fréquence d'usage vient de Lexique, ou, pour un mot qu'il ne connaît pas,
+de **wordfreq** (Wikipédia, presse, sous-titres, web). Un mot qui est aussi la
+forme d'un autre — *entrait*, la poutre, et « il entrait » ; *est*, le point
+cardinal, et « il est » — cède sa graphie au plus courant : dans une citation,
+« il est » mène à *être*.
 
 Tous les sens sont gardés ; les citations sont rognées (deux pour le premier
 sens, une pour les onze suivants, choisies parmi les plus lisibles), les
 étymologies très longues coupées, signalé par « […] ». Rien n'est réécrit.
 Voir [build/SOURCES.md](build/SOURCES.md).
 
-### Sur le téléphone : ≈ 76 Mo, tout hors ligne
+### Sur le téléphone : ≈ 98 Mo, tout hors ligne
 
-- à l'installation, le service worker range les **index** (9,4 Mo — toute la
+- à l'installation, le service worker range les **index** (12 Mo — toute la
   recherche, avec la première définition de chaque mot) et le **socle**
   (20 Mo — les 13 800 mots et expressions les plus courants) ;
-- puis la **suite** (47 Mo) se télécharge d'elle-même en arrière-plan, par
+- puis la **suite** (66 Mo) se télécharge d'elle-même en arrière-plan, par
   tranches, et reprend là où elle s'est arrêtée. Le réglage « Garder tout le
   dictionnaire hors ligne » est coché d'office ; décoché, les mots rares se
   chargent à la demande et restent ensuite sur l'appareil. Il ne démarre pas
@@ -127,7 +145,8 @@ de Wortschatz, `js/miseajour.js`).
 ## Construire les données
 
 ```
-python build/telecharger.py   # Wiktionnaire (≈ 700 Mo) et Lexique 3.83
+pip install wordfreq==3.1.1     # une fois : ses fréquences voyagent dans le paquet
+python build/telecharger.py   # Wiktionnaire (≈ 700 Mo), Lexique 3.83, Grammalecte, wordfreq
 python build/extraire.py      # ≈ 2 min : les mots français, en extrait compact
 python build/construire.py    # ≈ 1 min : data/dico/ et data/manifeste.json
 python build/verifier.py      # intégrité des données + épreuves JavaScript
@@ -139,7 +158,7 @@ que `build/etiquettes.py` ne sait pas encore traduire.
 ## Épreuves
 
 ```
-node build/essais.mjs            # recherche, correction, calendrier (44 cas)
+node build/essais.mjs            # recherche, liens, correction, calendrier (89 cas)
 python build/verifier.py         # données : tri, tranches, clés Python = JS
 node build/essais_hors_ligne.mjs # serveur arrêté : l'application tient (12 cas)
 node build/captures.mjs          # parcours complet au format téléphone, captures

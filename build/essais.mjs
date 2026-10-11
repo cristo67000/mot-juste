@@ -79,6 +79,33 @@ cas('résoudre « chevaux » dans un texte → cheval', (Lexique.resoudre('cheva
 cas('résoudre « Les » en début de phrase → les/le', !!Lexique.resoudre('Les'));
 cas('un mot absent reste muet', Lexique.resoudre('zzzxq') === null);
 
+console.log('Mots hors de Lexique');
+for (const mot of ['incrémenter', 'prandial', 'après-midi', 'sérendipité', 'désambiguïser']) {
+  r = Lexique.chercher(mot);
+  cas(`« ${mot} » au dictionnaire, en tête`, r[0] && r[0].mot === mot, mots(r).slice(0, 3));
+}
+r = Lexique.chercher('incrémenté');
+cas('« incrémenté » → incrémenter (forme vue par wordfreq)', mots(r).includes('incrémenter'), mots(r).slice(0, 3));
+r = Lexique.chercher('tronçonneuse');
+cas('« tronçonneuse » : la machine avant tronçonneur', r[0] && r[0].mot === 'tronçonneuse', mots(r).slice(0, 3));
+r = Lexique.chercher('entrait');
+cas('« entrait » : entrer avant la poutre', r[0] && r[0].mot === 'entrer' && mots(r).includes('entrait'), mots(r).slice(0, 3));
+r = Lexique.chercher('trompe');
+cas('« trompe » ne propose pas « je » (renvoi de hasard écarté)', !mots(r).includes('je'), mots(r).slice(0, 5));
+const prandial = await Lexique.entree('prandial');
+cas('« prandial » : un sens et une étymologie', prandial && prandial.l[0].s.length >= 1 && prandial.et);
+
+console.log('Liens dans les textes');
+for (const [forme, lemme] of [['est', 'être'], ['vit', 'voir'], ['doit', 'devoir'], ['sais', 'savoir'],
+  ['fut', 'être'], ['entrait', 'entrer'], ['amis', 'ami'], ['trompe', 'tromper']]) {
+  const trouve = Lexique.resoudre(forme);
+  cas(`résoudre « ${forme} » → ${lemme}`, trouve && trouve.mot === lemme, trouve && trouve.mot);
+}
+for (const mot of ['bois', 'sens', 'tronçonneuse', 'prandial']) {
+  const trouve = Lexique.resoudre(mot);
+  cas(`résoudre « ${mot} » → lui-même`, trouve && trouve.mot === mot, trouve && trouve.mot);
+}
+
 console.log('Expressions');
 let x = mots(Lexique.expressionsPour('pomme'));
 cas('« pomme » → tomber dans les pommes', x.includes('tomber dans les pommes'), x.slice(0, 8));

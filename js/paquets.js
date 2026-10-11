@@ -5,7 +5,7 @@
  * Les données vivent dans un cache à part, nommé d'après leur construction —
  * `mot-juste-donnees-<format>-<date>` —, et non d'après la version de
  * l'application : corriger une faute dans le code ne doit pas faire
- * retélécharger 70 Mo sur un forfait mobile.
+ * retélécharger 100 Mo sur un forfait mobile.
  *
  *   à l'installation   le service worker y range les index et le socle
  *                      (les mots les plus courants), ~30 Mo ;

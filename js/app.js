@@ -2,7 +2,7 @@
 /*
  * L'interface : onglets, recherche, accueil, réglages.
  *
- * La recherche est synchrone. Chercher un début de mot parmi 76 000 vedettes
+ * La recherche est synchrone. Chercher un début de mot parmi 106 000 vedettes
  * est une dichotomie — une vingtaine de comparaisons — et coûte moins qu'un
  * battement de cil ; ce qui coûte, c'est de dessiner la liste. Il n'y a donc
  * pas de temporisation à la frappe : les résultats suivent la touche.
@@ -362,7 +362,7 @@
     Sauvegarde.dessiner(e.zoneSauvegarde);
     Installer.dessiner();
     const version = (racine.MiseAJour && MiseAJour.version) || '';
-    e.versions.textContent = 'Application ' + (version || 'v1.0.2') + ' · dictionnaire du '
+    e.versions.textContent = 'Application ' + (version || 'v1.1.0') + ' · dictionnaire du '
       + Outils.dateLisible(manifeste.construit + 'T12:00:00') + '.';
     await dessinerDictionnaire();
   }
