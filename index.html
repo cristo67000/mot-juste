@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#7b2d3a">
   <!-- La version de la coquille, la même que dans sw.js : à l'installation,
        le service worker refuse une page d'une autre version. -->
-  <meta name="application-version" content="v1.1.0">
+  <meta name="application-version" content="v1.1.1">
   <title>Le Mot juste — dictionnaire de français</title>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -60,6 +60,7 @@
 
       <div id="accueil">
         <p id="etat-hors-ligne" class="discret" hidden></p>
+        <section id="carte-installation" class="carte-installation" aria-label="Installer l’application" hidden></section>
         <section id="du-jour" class="carte-du-jour" hidden></section>
         <div id="recents"></div>
         <p class="essayez discret">Essayez : <span id="suggestions"></span></p>
