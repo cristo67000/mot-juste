@@ -1,0 +1,217 @@
+# Les mots actuels : argot, langue des réseaux, vocabulaire récent.
+#
+# Ni Lexique (des films et des livres d'avant 2010) ni Grammalecte ne les
+# connaissent tous : « poucave », « cringe », « banger », « seum » restaient
+# dehors. Cette liste leur ouvre une cinquième voie, « actuel » (voir
+# construire.py). Un mot n'entre que si le Wiktionnaire le décrit — rien
+# n'est rédigé ici, seulement choisi ; les absents sont nommés dans
+# build/rapport.txt.
+#
+# Une vedette par ligne, telle que le Wiktionnaire l'écrit ; une expression
+# entre comme un mot. Ce qui suit « # » est un commentaire.
+#
+# Choisis en novembre 2026, d'après les nouveautés du Petit Robert et du
+# Petit Larousse 2026 et 2027 (crush, prompter, polycrise, trumpisme…) et
+# les relevés d'argot des 18-24 ans (seum, charo, tarpin, charbonner…).
+# Sont laissés de côté les mots que le Wiktionnaire ne décrit que dans un
+# autre sens (« flexer » : poser du flex thermocollant), et les insultes
+# qui ne sont que cela.
+
+# — L'argot des jeunes
+askip
+bader
+banger
+bg
+binks
+bolos
+bolosser
+boug
+cheh
+charo
+chanmé
+crari
+cringe
+crush
+crusher
+darka
+doro
+foncedé
+fraté
+golri
+gamos
+goat
+goumin
+gova
+gow
+hagra
+hess
+igo
+ienb
+kassos
+khey
+kiffance
+kéblo
+michto
+mif
+mifa
+miskine
+moula
+moulaga
+mythonner
+nehess
+nrv
+osef
+pécho
+poucave
+poucaver
+racli
+reuf
+reum
+reup
+reuss
+rizz
+sah
+seum
+sheitan
+skeud
+soumsoum
+swag
+tana
+tarpin
+tise
+vénèr
+wallah
+zarb
+zarma
+zbeul
+zbeulifier
+zehef
+zehma
+zouz
+bédo
+bicraver
+teuchi
+
+# — Les expressions
+avoir le seum
+éclaté au sol
+être en PLS
+PLS
+ma gâtée
+en vrai
+coup de pression
+ça passe crème
+sur la tête de ma mère
+glow up
+hot take
+
+# — L'écrit des messageries
+mdr
+ptdr
+jpp
+tqt
+
+# — Les réseaux, les écrans, le jeu
+binge-watcher
+binge watching
+doomscrolling
+emoji
+fandom
+fangirl
+follower
+followeur
+gameplay
+gameuse
+hater
+instagrameuse
+instagrammeur
+mot-dièse
+notif
+PNJ
+prank
+pranker
+prankeur
+prankeuse
+ragequit
+shipper
+stalker
+story
+streameuse
+swiper
+texter
+tiktokeur
+tiktokeuse
+trolleur
+vlogueuse
+webtoon
+youtubeuse
+e-sport
+esport
+mood
+vibe
+masterclass
+
+# — Le travail et l'économie d'aujourd'hui
+surperformer
+surperformance
+sous-performer
+benchmarker
+brainstormer
+checker
+coliving
+coworking
+forwarder
+onboarding
+slasheur
+startuper
+uberiser
+ubériser
+ubérisation
+low-cost
+bore-out
+burnout
+quiet quitting
+backlash
+
+# — La société, la politique, les idées
+antiwoke
+wokiste
+incel
+mansplaining
+manspreading
+gaslighting
+gaslighter
+masculinité toxique
+pervers narcissique
+écriture inclusive
+point médian
+cancel culture
+fake news
+fake
+love bombing
+neurodivergent
+neurodivergence
+non-binaire
+polycrise
+trumpisme
+solastalgie
+écoanxieux
+greenwashing
+covid
+
+# — Les techniques
+prompter
+deepfake
+darkweb
+dark web
+dataviz
+NFT
+googler
+
+# — La table et les loisirs
+batch cooking
+bubble tea
+glamping
+padel
+poké
+hygge

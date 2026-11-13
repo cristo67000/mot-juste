@@ -84,6 +84,16 @@ for (const mot of ['incrémenter', 'prandial', 'après-midi', 'sérendipité', '
   r = Lexique.chercher(mot);
   cas(`« ${mot} » au dictionnaire, en tête`, r[0] && r[0].mot === mot, mots(r).slice(0, 3));
 }
+console.log('Mots actuels (build/mots-actuels.txt)');
+for (const mot of ['poucave', 'cringe', 'banger', 'seum', 'surperformer', 'crush', 'askip', 'prompter']) {
+  r = Lexique.chercher(mot);
+  cas(`« ${mot} » au dictionnaire, en tête`, r[0] && r[0].mot === mot, mots(r).slice(0, 3));
+}
+cas('« seum » range « avoir le seum »', mots(Lexique.expressionsPour('seum')).includes('avoir le seum'),
+  mots(Lexique.expressionsPour('seum')));
+cas('« moula », l’argent, ne mène pas à « mouler »', (Lexique.resoudre('moula') || {}).mot === 'moula',
+  Lexique.resoudre('moula'));
+cas('un mot actuel est « moins courant » au moins', Lexique.vedette('seum').bande <= 2, Lexique.vedette('seum'));
 r = Lexique.chercher('incrémenté');
 cas('« incrémenté » → incrémenter (forme vue par wordfreq)', mots(r).includes('incrémenter'), mots(r).slice(0, 3));
 r = Lexique.chercher('tronçonneuse');

@@ -1,6 +1,6 @@
 {
  "format": 1,
- "construit": "2026-10-11",
+ "construit": "2026-11-13",
  "sources": {
   "wiktionnaire": "Wiktionnaire, extraction wiktextract publiée par kaikki.org",
   "lexique": "Lexique 3.83",
@@ -14,10 +14,10 @@
   "rare"
  ],
  "dico": {
-  "entrees": 106601,
-  "mots": 73477,
-  "expressions": 33124,
-  "formes": 146421,
+  "entrees": 106790,
+  "mots": 73640,
+  "expressions": 33150,
+  "formes": 146650,
   "socle_entrees": 13831,
   "tranches": 179,
   "fichiers": {
@@ -211,9 +211,9 @@
    ]
   },
   "octets": {
-   "index": 12742186,
+   "index": 12759245,
    "socle": 20971897,
-   "suite": 69392911
+   "suite": 69541255
   }
  },
  "du_jour": [

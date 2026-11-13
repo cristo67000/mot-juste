@@ -30,7 +30,7 @@ Le Wiktionnaire décrit 390 000 mots français. Les deux tiers sont des
 gentilés de communes, des noms d'espèces, des termes de métier : un
 dictionnaire de poche n'en a que faire, et un téléphone non plus.
 
-Un mot entre par l'une de quatre voies — la première qui s'applique est
+Un mot entre par l'une de cinq voies — la première qui s'applique est
 notée, et `rapport.txt` les compte :
 
   lexique      il paraît dans Lexique 3.83 (sous-titres de films et livres,
@@ -56,6 +56,12 @@ notée, et `rapport.txt` les compte :
                fréquence que Lexique donne à la forme ; sinon, ce peut être
                un homographe de hasard — « amis », langue de Taïwan, n'est
                pas le pluriel d'« ami » —, et il est dit « rare ».
+  actuel       il est dans `mots-actuels.txt`, une liste choisie à la main :
+               l'argot et la langue des réseaux, que ni des films d'avant
+               2010 ni un correcteur orthographique ne disent tous —
+               « poucave », « cringe », « banger », « seum », « surperformer ».
+               Une expression de la liste entre de même, sans l'épreuve des
+               mots connus (« avoir le seum », « éclaté au sol »).
 
 Le reste — 230 000 mots du Wiktionnaire — n'entre pas : gentilés,
 espèces, mots d'un seul auteur (« égoïstiser »), et ce que seul un spécialiste
@@ -172,6 +178,8 @@ PRIORITE_MAX_AUTRES = 1.0
 # Une forme fléchie d'un mot venu d'ailleurs entre dans l'index si wordfreq
 # l'a rencontrée au moins une fois sur cent millions de mots (zipf 1).
 ZIPF_FORME_MIN = 1.0
+# La bande la plus basse d'un mot de mots-actuels.txt : « moins courant ».
+BANDE_ACTUELS = 2
 
 
 # Les mots-outils ne rangent pas les expressions : sous « de », il y en aurait
@@ -256,6 +264,17 @@ def lire_wordfreq():
             if valeur:
                 zipf[mot] = float(valeur)
     return zipf
+
+
+def lire_actuels():
+    """Les vedettes de mots-actuels.txt, dans l'ordre, commentaires ôtés."""
+    mots = []
+    with open(RACINE / "mots-actuels.txt", encoding="utf-8") as f:
+        for ligne in f:
+            mot = unicodedata.normalize("NFC", ligne.split("#")[0].strip())
+            if mot and mot not in mots:
+                mots.append(mot)
+    return mots
 
 
 def normal(mot):
@@ -385,6 +404,23 @@ def choisir(meta, renvois, derives, src):
         if mot not in choisis and mot[:1].islower() and mot in src["grammalecte"]:
             prendre(mot, "grammalecte", frequence_libre(mot))
 
+    # 2 bis. La liste des mots actuels — avant les voies 3 et 4, pour que leurs
+    # bases étymologiques entrent aussi. Un mot que le Wiktionnaire ne décrit
+    # pas reste dehors : il est signalé au rapport.
+    actuels_expressions = []
+    for mot in src["actuels"]:
+        if mot not in meta or mot in choisis:
+            continue
+        if est_expression(mot, meta[mot]):
+            actuels_expressions.append(mot)
+        else:
+            prendre(mot, "actuel", frequence_libre(mot))
+            # wordfreq mesure des textes d'avant 2022, et peu de messageries :
+            # « seum » ou « cringe » y paraissent rares. S'ils sont sur la
+            # liste, c'est qu'on les entend ; ils sont dits « moins courant »
+            # au moins — jamais plus haut que ce que wordfreq leur donne.
+            bandes[mot] = min(bandes[mot], BANDE_ACTUELS)
+
     # Les voies 3 et 4 demandent de lire des fiches : on réunit les candidats,
     # puis une seule lecture.
     bases = {}
@@ -455,6 +491,12 @@ def choisir(meta, renvois, derives, src):
             valeur *= 2
         choisis[mot] = min(valeur, 8.0)
         expressions.add(mot)
+    # Les expressions de la liste des mots actuels : leurs mots sont souvent
+    # inconnus de Lexique (« seum », « PLS ») — c'est la raison de la liste.
+    for mot in actuels_expressions:
+        if mot not in expressions:
+            choisis[mot] = 0.05
+            expressions.add(mot)
     return choisis, expressions, bandes, voies, sans_lien
 
 
@@ -803,7 +845,12 @@ def construire(meta, renvois, derives, src, formes_brutes, rapport):
         part = src["repartition"].get(normal(forme), {})
         return (part.get(normal(lemme), 0.0), choisis.get(lemme, 0.0))
 
+    # Un mot de la liste des mots actuels ne cède pas : il a été choisi pour
+    # sa graphie, et les formes du Wiktionnaire y voient des hasards —
+    # « moula », l'argent, et « il moula » ; « poké » et « poker ».
     for forme, lemme in formes_brutes:
+        if voies.get(forme) == "actuel":
+            continue
         if forme in bandes and lemme != forme and lemme in choisis and lemme not in expressions:
             if forme not in cedent or poids_du_lemme(forme, lemme) > poids_du_lemme(forme, cedent[forme]):
                 cedent[forme] = lemme
@@ -947,11 +994,15 @@ def construire(meta, renvois, derives, src, formes_brutes, rapport):
     rapport.append("  bandes : " + ", ".join(f"{b}={par_bande[b]}" for b in sorted(par_bande)))
     par_voie = collections.Counter(voies[e["m"]] for p, e in entrees if e["m"] in voies)
     rapport.append("  voies d'entrée des mots : " + ", ".join(
-        f"{v}={par_voie[v]}" for v in ("lexique", "grammalecte", "base", "nom"))
+        f"{v}={par_voie[v]}" for v in ("lexique", "grammalecte", "actuel", "base", "nom"))
         + f" — {len(cedent)} vedettes cèdent leur graphie à un lemme")
     rapport.append("    par exemple : " + ", ".join(
         f"{m} → {cedent[m]}" for m in ("est", "vit", "doit", "sais", "entrait", "anime", "amis")
         if m in cedent))
+    retenues = set(e["m"] for p, e in entrees)
+    absents = [m for m in src["actuels"] if m not in retenues]
+    rapport.append(f"  mots actuels : {len(src['actuels']) - len(absents)} sur {len(src['actuels'])} au dictionnaire"
+                   + (" — absents du Wiktionnaire ou écartés : " + ", ".join(absents) if absents else ""))
     for voie in ("base", "nom"):
         exemples = sorted((e["m"] for p, e in entrees if voies.get(e["m"]) == voie), key=cle)
         rapport.append(f"    {voie} : " + ", ".join(exemples[::max(1, len(exemples) // 40)][:40]))
@@ -999,7 +1050,8 @@ def main():
     print("Grammalecte, wordfreq…", flush=True)
     src = {"lemmes": par_lemme, "formes": par_forme, "noms": noms,
            "lemmes_des_noms": lemmes_des_noms, "repartition": repartition,
-           "grammalecte": lire_grammalecte(), "wordfreq": lire_wordfreq()}
+           "grammalecte": lire_grammalecte(), "wordfreq": lire_wordfreq(),
+           "actuels": lire_actuels()}
     print("Première lecture des sections…", flush=True)
     meta, renvois, derives = premiere_lecture()
     print("Formes fléchies…", flush=True)

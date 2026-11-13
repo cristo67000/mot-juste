@@ -103,7 +103,7 @@ rien n'est effacé.
 
 ## Le dictionnaire
 
-**106 601 vedettes** : 73 477 mots et 33 124 locutions et expressions, tirés
+**106 790 vedettes** : 73 640 mots et 33 150 locutions et expressions, tirés
 du **Wiktionnaire** (extraction wiktextract, CC BY-SA 4.0). Un mot entre :
 
 - s'il paraît dans **Lexique 3.83**, l'usage réel mesuré dans des films et des
@@ -115,6 +115,12 @@ du **Wiktionnaire** (extraction wiktextract, CC BY-SA 4.0). Un mot entre :
   et *après-midi*, que Lexique coupe en deux ;
 - ou si un mot retenu en dérive et le nomme dans son étymologie (1 027) :
   *postprandial* vient « de *prandial* », donc *prandial* entre ;
+- ou s'il figure à la liste des **mots actuels** (`build/mots-actuels.txt`,
+  183 vedettes choisies à la main) : l'argot et la langue des réseaux que ni
+  Lexique ni Grammalecte ne disent tous — *poucave*, *cringe*, *banger*,
+  *seum*, *surperformer*, *avoir le seum*, *éclaté au sol*. Le Wiktionnaire
+  doit les décrire : la liste choisit, elle ne rédige rien. Ils sont dits
+  « moins courant » au moins, wordfreq mesurant des textes d'avant 2022 ;
 - ou si Lexique l'a vu employé comme nom mais rangé sous un autre lemme
   (1 622) : *tronçonneuse* sous *tronçonneur*, *tourterelle* sous
   *tourtereau*, quand le Wiktionnaire en fait un mot à part.
@@ -169,7 +175,7 @@ que `build/etiquettes.py` ne sait pas encore traduire.
 ## Épreuves
 
 ```
-node build/essais.mjs            # recherche, liens, correction, calendrier, grilles (97 cas)
+node build/essais.mjs            # recherche, liens, correction, calendrier, grilles, mots actuels (108 cas)
 python build/verifier.py         # données : tri, tranches, clés Python = JS
 node build/essais_hors_ligne.mjs # serveur arrêté : l'application tient (12 cas)
 node build/captures.mjs          # parcours complet au format téléphone, captures
