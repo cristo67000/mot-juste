@@ -70,6 +70,17 @@ Une fiche ratée repasse en fin de séance. L'onglet Réviser montre ce qui est
 dû, la série de jours d'affilée et la part des fiches acquises ; un
 **entraînement libre** permet de s'exercer sans toucher au calendrier.
 
+**Jouer : les mots fléchés.** L’onglet Fléchés compose une grille avec les
+mots des fiches de révision, les plus fragiles d’abord ; s’il en manque pour
+garnir la grille, des mots consultés récemment et des mots du jour la
+complètent. Chaque mot part d’une case fléchée, et sa définition — celle de la
+fiche, le mot masqué — s’affiche au-dessus de la grille. Un mot juste se
+verrouille en vert ; trois aides : une lettre, le mot, les lettres fausses. La
+grille en cours est gardée sur l’appareil. Le calendrier des fiches ne bouge
+pas : un mot trouvé sans aide compte comme une réponse d’entraînement libre.
+Seuls entrent les mots d’un seul tenant de 3 à 11 lettres, sans accents dans
+la grille (*égérie* s’écrit EGERIE).
+
 **Annoter.** Chaque fiche a son bloc « Mes notes » : un moyen mnémotechnique,
 la phrase où l'on a croisé le mot. La note s'enregistre d'elle-même, revient
 en rappel **après** la réponse pendant les révisions (avant, elle donnerait la
@@ -158,7 +169,7 @@ que `build/etiquettes.py` ne sait pas encore traduire.
 ## Épreuves
 
 ```
-node build/essais.mjs            # recherche, liens, correction, calendrier (89 cas)
+node build/essais.mjs            # recherche, liens, correction, calendrier, grilles (97 cas)
 python build/verifier.py         # données : tri, tranches, clés Python = JS
 node build/essais_hors_ligne.mjs # serveur arrêté : l'application tient (12 cas)
 node build/captures.mjs          # parcours complet au format téléphone, captures
@@ -177,6 +188,8 @@ affichage (`build/pilote_chrome.mjs`, repris de Wortschatz).
 | `js/revision.js` | le calendrier (SM-2), les séances |
 | `js/exercices.js` | les questions et leur correction |
 | `js/seance.js` | l'onglet Réviser |
+| `js/grille.js` | le compositeur de grilles de mots fléchés |
+| `js/fleches.js` | l'onglet Fléchés |
 | `js/notes.js` | les notes |
 | `js/perso.js` | les mots à soi et leur formulaire |
 | `js/carnet.js` | l'onglet Carnet |

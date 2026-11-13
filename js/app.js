@@ -24,6 +24,7 @@
       else b.removeAttribute('aria-current');
     }
     if (nom === 'reviser') Seance.rafraichir();
+    if (nom === 'fleches') Fleches.ouvrir();
     if (nom === 'carnet') Carnet.dessiner(); else Carnet.reinitialiser();
     if (nom === 'reglages') dessinerReglages();
     if (nom === 'chercher') dessinerAccueil();
@@ -362,7 +363,7 @@
     Sauvegarde.dessiner(e.zoneSauvegarde);
     Installer.dessiner();
     const version = (racine.MiseAJour && MiseAJour.version) || '';
-    e.versions.textContent = 'Application ' + (version || 'v1.1.1') + ' · dictionnaire du '
+    e.versions.textContent = 'Application ' + (version || 'v1.2.0') + ' · dictionnaire du '
       + Outils.dateLisible(manifeste.construit + 'T12:00:00') + '.';
     await dessinerDictionnaire();
   }
@@ -449,6 +450,7 @@
 
     brancherReglages();
     Seance.brancher(reglages);
+    Fleches.brancher({ manifeste });
     Carnet.brancher();
     Installer.brancher();
     Seance.rafraichir();

@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#7b2d3a">
   <!-- La version de la coquille, la même que dans sw.js : à l'installation,
        le service worker refuse une page d'une autre version. -->
-  <meta name="application-version" content="v1.1.1">
+  <meta name="application-version" content="v1.2.0">
   <title>Le Mot juste — dictionnaire de français</title>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -118,6 +118,23 @@
         <p id="bilan-texte" class="discret"></p>
         <button id="b-continuer" type="button" class="bouton-principal">Continuer</button>
         <button id="b-terminer" type="button" class="bouton-discret large">Revenir aux fiches</button>
+      </div>
+    </section>
+
+    <!-- ————— Mots fléchés ————— -->
+    <section id="vue-fleches" class="vue" hidden>
+      <div class="fleches-tete">
+        <h2>Mots fléchés</h2>
+        <span id="fleches-compte" class="discret"></span>
+        <button id="b-fleches-nouvelle" type="button" class="lien-discret">Nouvelle grille</button>
+      </div>
+      <p id="fleches-attente" class="discret" role="status" hidden></p>
+      <div id="fleches-jeu" hidden>
+        <div id="fleches-indice" aria-live="polite"></div>
+        <div id="fleches-grille" class="fleches-grille"></div>
+        <p id="fleches-origine" class="discret"></p>
+        <div id="fleches-bilan" hidden></div>
+        <div id="fleches-clavier"></div>
       </div>
     </section>
 
@@ -237,6 +254,9 @@
     <button type="button" data-vue="reviser">
       <span class="pictogramme" aria-hidden="true">❏</span><span>Réviser</span><span id="pastille-dues" class="pastille-onglet" hidden></span>
     </button>
+    <button type="button" data-vue="fleches">
+      <span class="pictogramme" aria-hidden="true">▦</span><span>Fléchés</span>
+    </button>
     <button type="button" data-vue="carnet">
       <span class="pictogramme" aria-hidden="true">✎</span><span>Carnet</span>
     </button>
@@ -264,6 +284,8 @@
   <script src="js/fiche.js"></script>
   <script src="js/exercices.js"></script>
   <script src="js/seance.js"></script>
+  <script src="js/grille.js"></script>
+  <script src="js/fleches.js"></script>
   <script src="js/carnet.js"></script>
   <script src="js/sauvegarde.js"></script>
   <script src="js/paquets.js"></script>

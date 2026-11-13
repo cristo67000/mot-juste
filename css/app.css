@@ -487,6 +487,88 @@ mark.cible { background: transparent; color: var(--encre); font-weight: 700; fon
 #seance-bilan .bouton-principal { margin: 1rem 0 .4rem; }
 #bilan-texte .lie { font-size: 1rem; }
 
+/* ————— Mots fléchés ————— */
+
+.fleches-tete { display: flex; align-items: baseline; gap: .7rem; }
+.fleches-tete h2 { margin: .6rem 0 .4rem; }
+.fleches-tete .lien-discret { margin-left: auto; }
+
+/* La définition reste en haut de l'écran pendant qu'on écrit : sur un petit
+   téléphone, la grille défile dessous. Sa hauteur est tenue, pour que la
+   grille ne saute pas d'une définition courte à une longue. */
+#fleches-indice {
+  position: sticky; top: 0; z-index: 5;
+  min-height: 5.6rem; padding: .5rem .8rem; margin: 0 0 .6rem;
+  background: var(--papier-releve); border: 1px solid var(--trait);
+  border-left: 4px solid var(--accent); border-radius: var(--rayon); box-shadow: var(--ombre);
+}
+#fleches-indice p { margin: 0; }
+.indice-tete { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+.indice-fleche { color: var(--accent); font-weight: 700; }
+.indice-definition { font-family: var(--serif); font-size: 1.05rem; line-height: 1.35; }
+.indice-trouve { font-family: var(--serif); font-weight: 600; color: var(--bien); }
+.indice-trouve .lien-discret { font-family: var(--sans); font-weight: 400; padding: 0 .2rem; }
+
+.fleches-grille {
+  --colonnes: 10; --lignes: 12;
+  display: grid; gap: 2px;
+  grid-template-columns: repeat(var(--colonnes), 1fr);
+  grid-template-rows: repeat(var(--lignes), 1fr);
+  aspect-ratio: var(--colonnes) / var(--lignes);
+  width: min(100%, calc(var(--colonnes) * 2.9rem)); margin: 0 auto;
+  container-type: inline-size;
+}
+.case {
+  min-width: 0; min-height: 0; padding: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; line-height: 1; touch-action: manipulation;
+  font-size: 1.1rem; font-size: calc(55cqw / var(--colonnes));
+}
+.case.lettre {
+  border: 1px solid var(--trait); background: var(--papier-releve); color: var(--encre);
+  font-weight: 600; cursor: pointer;
+}
+.case.def {
+  border: 0; background: var(--accent); color: var(--sur-accent); cursor: pointer;
+  gap: .1em; font-weight: 700;
+  font-size: 1rem; font-size: calc(46cqw / var(--colonnes));
+}
+.case.def.faite { background: var(--bien); opacity: .55; }
+.case.def.dans-mot { outline: 2px solid var(--or); outline-offset: -2px; opacity: 1; }
+.case.lettre.dans-mot { background: var(--accent-clair);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--trait)); }
+.case.lettre.trouvee { color: var(--bien); background: var(--bien-fond); }
+.case.lettre.trouvee.dans-mot { border-color: var(--bien); }
+.case.lettre.fausse { color: var(--mal); background: var(--mal-fond); border-color: var(--mal); }
+.case.lettre.active { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+#fleches-origine { margin: .7rem 0; text-align: center; }
+
+/* Le clavier de la grille : toujours sous le pouce, au-dessus des onglets, et
+   d'un bord à l'autre de l'écran — dix touches de front demandent la place. */
+#fleches-clavier {
+  position: sticky; z-index: 5;
+  bottom: calc(var(--barre-h) + env(safe-area-inset-bottom));
+  margin: 0 -1rem; padding: .4rem .25rem .35rem;
+  background: var(--papier); border-top: 1px solid var(--trait);
+  display: flex; flex-direction: column; gap: .3rem;
+}
+.clavier-aides { display: flex; gap: .4rem; justify-content: center; padding: 0 .5rem; }
+.clavier-aides .bouton-discret { flex: 1; max-width: 9rem; min-height: 2.3rem; padding: .3rem .4rem; font-size: .88rem; }
+.clavier-rangee { display: flex; gap: .22rem; justify-content: center; }
+.touche-lettre {
+  flex: 1 1 0; max-width: 3rem; min-width: 0; height: 2.8rem; padding: 0;
+  border: 1px solid var(--trait); border-radius: 7px; background: var(--papier-releve);
+  font-size: 1.05rem; font-weight: 600; cursor: pointer; touch-action: manipulation;
+}
+.touche-lettre:active { background: var(--accent-clair); border-color: var(--accent); }
+.touche-large { flex: 1.6 1 0; max-width: 4.8rem; }
+
+#fleches-bilan { margin: 1rem 0; padding: 1rem; background: var(--papier-releve);
+  border: 1px solid var(--bien); border-radius: var(--rayon); }
+#fleches-bilan h3 { margin: 0 0 .2rem; color: var(--bien); }
+#fleches-bilan .liste-liee { margin: .8rem 0 1rem; }
+
 /* ————— Carnet ————— */
 
 .segments { display: flex; gap: .35rem; margin: 0 0 .8rem; }

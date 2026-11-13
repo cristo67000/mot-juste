@@ -25,7 +25,7 @@
  * données ne lui appartient pas : seul js/paquets.js y touche.
  */
 
-const VERSION = 'v1.1.1';
+const VERSION = 'v1.2.0';
 const COQUILLE = 'mot-juste-coquille-' + VERSION;
 const PREFIXE_DONNEES = 'mot-juste-donnees-';
 
@@ -47,6 +47,8 @@ const FICHIERS = [
   'js/fiche.js',
   'js/exercices.js',
   'js/seance.js',
+  'js/grille.js',
+  'js/fleches.js',
   'js/carnet.js',
   'js/sauvegarde.js',
   'js/paquets.js',
