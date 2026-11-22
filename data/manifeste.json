@@ -24,7 +24,8 @@
    "index": [
     "dico/mots.idx",
     "dico/formes.idx",
-    "dico/expressions.idx"
+    "dico/expressions.idx",
+    "dico/fleches.idx"
    ],
    "socle": [
     "dico/t-000.json",
@@ -211,10 +212,11 @@
    ]
   },
   "octets": {
-   "index": 12759245,
+   "index": 15025764,
    "socle": 20971897,
    "suite": 69541255
-  }
+  },
+  "fleches": 25031
  },
  "du_jour": [
   "abaisser",

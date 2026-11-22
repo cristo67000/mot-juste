@@ -1084,6 +1084,9 @@ def main():
         "du_jour": du_jour,
     }
     ecrire(DONNEES / "manifeste.json", json.dumps(manifeste, ensure_ascii=False, indent=1))
+    print("Lexique des mots fléchés…", flush=True)
+    import fleches
+    fleches.main()
     rapport.append(f"Total {time.time() - debut:.0f} s")
     ecrire(RAPPORT, "\n".join(rapport) + "\n")
     print(rapport[-2])

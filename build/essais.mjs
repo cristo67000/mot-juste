@@ -290,16 +290,36 @@ console.log('Mots fléchés');
   /* Un hasard reproductible : une grille d'épreuve est la même d'une fois sur
    * l'autre. */
   const graine = (g) => () => { g = (g * 1664525 + 1013904223) % 4294967296; return g / 4294967296; };
+  const texte = lire('data/dico/fleches.idx');
+  const lexique = Grille.lexique(texte);
+  const lignes = texte.split('\n').filter(Boolean);
+  const cles = lignes.map((l) => l.split('\t')[0]);
+  cas('lexique des fléchés : plus de 20 000 mots, triés, bien formés',
+    lexique.mots.length > 20000 && lexique.mots.length === lignes.length
+      && cles.every((k, i) => i === 0 || cles[i - 1] < k)
+      && lignes.every((l) => [5, 6].includes(l.split('\t').length) && /^[a-z]{2,8}\t/.test(l)),
+    lexique.mots.length);
+  const deux = lexique.mots.filter((m) => m.k.length === 2).map((m) => m.k);
+  cas('à deux lettres, une courte liste choisie', deux.length >= 25 && deux.length <= 60
+    && !deux.includes('au') && deux.includes('os'), deux);
+  const rit = lexique.mots.find((m) => m.k === 'rit');
+  cas('« rit » : une forme de rire, qui mène à sa fiche', rit && rit.vedette === 'rire' && /présent/.test(rit.nature), rit);
+  cas('pas de mot vulgaire', !lexique.mots.some((m) => m.k === 'con'));
+
   const FICHES = ['pusillanime', 'narquois', 'sagace', 'diaphane', 'velleite', 'acrimonie', 'faconde',
     'ineffable', 'melliflu', 'obsequieux', 'pleonasme', 'sibyllin', 'cuistre', 'gouaille',
     'zizanie', 'abscons', 'callipyge', 'dithyrambe', 'egerie', 'fallacieux'];
-  const COMPLEMENTS = ['maison', 'arbre', 'riviere', 'soleil', 'orage', 'tisane', 'lanterne', 'sentier',
-    'ecume', 'rosee', 'nuage', 'etoile'];
-  const enCandidats = (fiches, complements) => fiches.map((k) => ({ k, prioritaire: true }))
-    .concat(complements.map((k) => ({ k, prioritaire: false })));
+  const COURANTES = ['egerie', 'faconde', 'cuistre', 'sagace', 'abscons', 'zizanie', 'acerbe', 'ineptie',
+    'prolixe', 'ubuesque', 'hiatus', 'apanage', 'lacune', 'obvie', 'pecore', 'vetuste', 'quidam',
+    'oiseux', 'aporie', 'ergoter', 'fadaise', 'gabegie', 'ivraie', 'lascif'];
+  const enCandidats = (fiches) => fiches.map((k) => ({ k, prioritaire: true }));
+  const connus = new Set(cles.concat(FICHES, COURANTES));
 
-  /* Une grille est juste si chaque suite de deux lettres ou plus, en ligne ou
-   * en colonne, est exactement un mot posé, précédé de sa case de définition. */
+  /* Une grille pleine est juste si : aucune case vide ; chaque suite de deux
+   * lettres ou plus, en ligne ou en colonne, est exactement un mot posé, connu,
+   * annoncé par sa case de définition — celle qui le précède, ou sur les bords
+   * celle d'à côté ; chaque lettre est d'un mot ; chaque case de définition
+   * annonce un ou deux mots ; aucun mot n'est posé deux fois. */
   function defauts(g) {
     const { cases, traces } = Grille.cases(g);
     const C = g.colonnes, L = g.lignes;
@@ -311,65 +331,76 @@ console.log('Mots fléchés');
       while (l < L && c < C && cases[l * C + c].type === 'lettre') { mot += cases[l * C + c].lettre; l += dl; c += dc; }
       return mot;
     };
+    cases.forEach((x, p) => {
+      if (x.type === 'vide') trouves.push('case vide ' + p);
+      if (x.type === 'lettre' && !x.mots.length) trouves.push('lettre isolée ' + p);
+      if (x.type === 'def' && (x.defs.length < 1 || x.defs.length > 2)) trouves.push('case à ' + x.defs.length + ' définitions');
+    });
     for (let l = 0; l < L; l += 1) {
       for (let c = 0; c < C; c += 1) {
         if (cases[l * C + c].type !== 'lettre') continue;
         for (const [sens, dl, dc] of [['h', 0, 1], ['v', 1, 0]]) {
-          const avant = (l - dl >= 0 && c - dc >= 0) ? cases[(l - dl) * C + c - dc] : null;
-          if (avant && avant.type === 'lettre') continue;       // pas un début
+          if (l - dl >= 0 && c - dc >= 0 && cases[(l - dl) * C + c - dc].type === 'lettre') continue;   // pas un début
           const mot = suite(l, c, dl, dc);
           if (mot.length < 2) continue;
           const signature = sens + ':' + l + ':' + c + ':' + mot;
           lus.add(signature);
           if (!attendus.has(signature)) trouves.push('suite imprévue ' + signature);
-          if (!avant || avant.type !== 'def') trouves.push('pas de définition devant ' + signature);
+          if (!connus.has(mot)) trouves.push('mot inconnu ' + mot);
         }
       }
     }
     for (const a of attendus) if (!lus.has(a)) trouves.push('mot illisible ' + a);
     g.mots.forEach((m, n) => {
       if (traces[n].some((p, i) => cases[p].lettre !== m.k[i])) trouves.push('lettres écrasées ' + m.k);
+      const [el, ec] = m.sens === 'h' ? (m.c > 0 ? [m.l, m.c - 1] : [m.l - 1, 0]) : (m.l > 0 ? [m.l - 1, m.c] : [0, m.c - 1]);
+      if (m.dl !== el || m.dc !== ec) trouves.push('flèche mal placée ' + m.k);
     });
-    // D'un seul tenant : tous les mots se rejoignent par leurs croisements.
-    const vus = new Set([0]);
-    const pile = [0];
-    while (pile.length) {
-      for (const p of traces[pile.pop()]) {
-        for (const n of cases[p].mots) if (!vus.has(n)) { vus.add(n); pile.push(n); }
-      }
-    }
-    if (vus.size !== g.mots.length) trouves.push('grille en plusieurs morceaux');
+    if (new Set(g.mots.map((m) => m.k)).size !== g.mots.length) trouves.push('mot posé deux fois');
     return trouves;
   }
 
   let pires = [];
-  let moins = Infinity;
-  let debordements = 0;
-  for (let g = 1; g <= 60; g += 1) {
-    const grille = Grille.composer(enCandidats(FICHES, COMPLEMENTS), { hasard: graine(g) });
+  let moins = Infinity, plus = 0, nuls = 0, croisees = 0, lettres = 0;
+  const debut = Date.now();
+  for (let g = 1; g <= 8; g += 1) {
+    const grille = Grille.composer(enCandidats(FICHES), { lexique, hasard: graine(g) });
+    if (!grille) { nuls += 1; continue; }
     pires = pires.concat(defauts(grille));
-    moins = Math.min(moins, grille.mots.filter((m) => m.prioritaire).length);
-    if (grille.colonnes > 10 || grille.lignes > 12) debordements += 1;
+    const n = grille.mots.filter((m) => m.prioritaire).length;
+    moins = Math.min(moins, n);
+    plus = Math.max(plus, n);
+    for (const x of Grille.cases(grille).cases) {
+      if (x.type === 'lettre') { lettres += 1; if (x.mots.length === 2) croisees += 1; }
+    }
   }
-  cas('60 grilles tirées : toutes justes', pires.length === 0, pires.slice(0, 3));
-  cas('la grille tient dans 10 × 12', debordements === 0, debordements);
-  cas('au moins 7 mots des fiches par grille', moins >= 7, moins);
+  const duree = (Date.now() - debut) / 8;
+  cas('8 grilles pleines tirées : toutes justes', nuls === 0 && pires.length === 0, { nuls, pires: pires.slice(0, 3) });
+  cas('des mots longs et rares : 3 mots des fiches par grille au moins', moins >= 3, { moins, plus });
+  cas('les trois quarts des lettres servent à deux mots', croisees / lettres >= 0.7, croisees / lettres);
+  cas('moins de deux secondes par grille', duree < 2000, Math.round(duree) + ' ms');
 
-  let grille = Grille.composer(enCandidats(FICHES, COMPLEMENTS), { hasard: graine(7) });
-  cas('beaucoup de fiches : deux compléments au plus', grille.mots.filter((m) => !m.prioritaire).length <= 2,
-    grille.mots.map((m) => m.k));
-  grille = Grille.composer(enCandidats(FICHES.slice(0, 3), COMPLEMENTS), { hasard: graine(3) });
-  cas('trois fiches : toutes posées, des compléments autour',
-    grille.mots.filter((m) => m.prioritaire).length === 3 && grille.mots.length >= 7 && defauts(grille).length === 0,
-    grille.mots.map((m) => m.k));
-  grille = Grille.composer(enCandidats([], COMPLEMENTS), { hasard: graine(5) });
-  cas('aucune fiche : une grille de compléments, juste', grille && grille.mots.length >= 6 && defauts(grille).length === 0,
-    grille && grille.mots.map((m) => m.k));
-  grille = Grille.composer([{ k: 'anticonstitutionnellement', prioritaire: true }, { k: 'été', prioritaire: true }], {});
-  cas('ni mot trop long ni lettre accentuée : rien ne tient, rien ne casse', grille === null, grille);
-  grille = Grille.composer(enCandidats(FICHES, []), { hasard: graine(11) });
+  let grille = Grille.composer(enCandidats(COURANTES), { lexique, hasard: graine(3) });
+  const n = grille ? grille.mots.filter((m) => m.prioritaire).length : 0;
+  cas('des mots de fiches plus ordinaires : 4 par grille au moins, grille juste',
+    n >= 4 && defauts(grille).length === 0, grille && grille.mots.filter((m) => m.prioritaire).map((m) => m.k));
+  grille = Grille.composer([], { lexique, hasard: graine(5) });
+  cas('aucune fiche : une grille de mots courants, juste', grille && grille.mots.length >= 25 && defauts(grille).length === 0,
+    grille && defauts(grille).slice(0, 3));
+  grille = Grille.composer([{ k: 'anticonstitutionnellement', prioritaire: true }, { k: 'été', prioritaire: true }], { lexique, hasard: graine(2) });
+  cas('ni mot trop long ni lettre accentuée : écartés, la grille se fait sans eux',
+    grille && !grille.mots.some((m) => m.prioritaire) && defauts(grille).length === 0);
+  cas('sans lexique, rien ne casse', Grille.composer(enCandidats(FICHES), { hasard: graine(1), essais: 1 }) === null);
+  grille = Grille.composer(enCandidats(FICHES), { lexique, hasard: graine(11) });
   cas('les mots sont rendus dans l’ordre de lecture', grille.mots.every((m, i) => i === 0
     || grille.mots[i - 1].l < m.l || (grille.mots[i - 1].l === m.l && grille.mots[i - 1].c <= m.c)));
+  cas('les flèches : → ↓ devant le mot, ↳ ↴ sur les bords',
+    Grille.fleche({ sens: 'h', l: 2, c: 1, dl: 2, dc: 0 }) === '→' && Grille.fleche({ sens: 'h', l: 2, c: 0, dl: 1, dc: 0 }) === '↳'
+    && Grille.fleche({ sens: 'v', l: 1, c: 3, dl: 0, dc: 3 }) === '↓' && Grille.fleche({ sens: 'v', l: 0, c: 3, dl: 0, dc: 2 }) === '↴');
+  const ancienne = { colonnes: 4, lignes: 2, mots: [{ k: 'ane', l: 0, c: 1, sens: 'h' }] };
+  const vieux = Grille.cases(ancienne);
+  cas('une grille gardée d’avant les grilles pleines se joue encore',
+    vieux.cases[0].type === 'def' && vieux.traces[0].join() === '1,2,3' && Grille.fleche(ancienne.mots[0]) === '→');
 }
 
 console.log(`\n${total - fautes}/${total} cas conformes`);

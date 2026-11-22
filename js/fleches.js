@@ -4,22 +4,24 @@
  *
  * ── D'où viennent les mots ─────────────────────────────────────────────────
  *
- * D'abord des fiches de révision, les plus fragiles en tête : un mot raté hier
- * a plus de chances d'entrer dans la grille qu'un mot su depuis six mois, et
- * les mots de la grille précédente passent leur tour. Quand les fiches ne
- * suffisent pas à garnir une grille, des compléments l'étoffent : les mots
- * consultés récemment, puis des « mots du jour ». La définition est celle de
- * la fiche, le mot lui-même masqué.
+ * La grille est pleine, comme celles des journaux (js/grille.js). Les mots des
+ * fiches de révision y sont posés d'abord, les plus fragiles en tête : un mot
+ * raté hier a plus de chances d'y entrer qu'un mot su depuis six mois, et les
+ * mots de la grille précédente passent leur tour. Les mots consultés
+ * récemment sont essayés ensuite, s'ils tiennent. Le reste — les croisements —
+ * est fait de mots courants, tirés de data/dico/fleches.idx avec leur indice :
+ * ce sont eux qui donnent les lettres qui mettent sur la voie des mots rares.
+ * La définition d'un mot des fiches est celle de sa fiche, le mot masqué.
  *
- * Seuls entrent les mots d'un seul tenant, de 3 à 11 lettres : ni locutions ni
+ * Seuls entrent les mots d'un seul tenant, de 3 à 10 lettres : ni locutions ni
  * traits d'union. Comme dans toute grille, les accents tombent — « égérie »
  * s'écrit EGERIE, « cœur » COEUR.
  *
  * ── Le jeu ─────────────────────────────────────────────────────────────────
  *
  * Une définition ne tient pas dans une case de téléphone : la case fléchée ne
- * porte que sa flèche, et la définition du mot choisi s'affiche au-dessus de
- * la grille. Le clavier est celui de l'application, pas celui du téléphone :
+ * porte que sa flèche (→ ↓, et sur les bords ↳ ↴), et la définition du mot
+ * choisi s'affiche au-dessus de la grille. Le clavier est celui de l'application, pas celui du téléphone :
  * il ne recouvre pas la grille et ne propose que des lettres.
  *
  * Un mot entièrement juste se verrouille de lui-même, en vert. Trois aides :
@@ -40,11 +42,11 @@
   const $ = (id) => document.getElementById(id);
   const CLE = 'mot-juste-fleches';
   const FORMAT = 1;
-  const COLONNES = 10, LIGNES = 12;
+  const COLONNES = 9, LIGNES = 11;
   const CLAVIER = ['AZERTYUIOP', 'QSDFGHJKLM', 'WXCVBN'];
-  const FLECHES = { h: '→', v: '↓' };
 
   let manifeste = null;
+  let lexique = null;       // Promise<Grille.lexique> : les mots des croisements
   const e = {};
   let partie = null;        // la grille, ses mots, ce qui est écrit
   let plan = null;          // { cases, traces } — Grille.cases(partie)
@@ -72,12 +74,23 @@
 
   // ── Choisir les mots ──────────────────────────────────────────────────────
 
+  /* Les mots des croisements, lus une fois. */
+  function lexiqueDesFleches() {
+    if (!lexique) {
+      lexique = fetch('data/dico/fleches.idx')
+        .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.text(); })
+        .then((texte) => Grille.lexique(texte));
+      lexique.catch(() => { lexique = null; });
+    }
+    return lexique;
+  }
+
   async function candidats(precedents) {
     const vus = new Set();
     const liste = [];
     function ajouter(mot, ref, prioritaire) {
       const k = Lexique.cle(mot);
-      if (!/^[a-z]{3,11}$/.test(k) || vus.has(k)) return false;
+      if (!/^[a-z]{3,10}$/.test(k) || vus.has(k)) return false;
       vus.add(k);
       liste.push({ k, mot, ref, prioritaire });
       return true;
@@ -103,17 +116,12 @@
       if (nFiches >= 36) break;
     }
 
-    // Les compléments : ce qu'on a consulté, puis des mots du jour.
+    // Ce qu'on a consulté récemment : essayé juste après les fiches.
     let n = 0;
     for (const ligne of await Store.historique().catch(() => [])) {
-      if (n >= 8) break;
+      if (n >= 12) break;
       const mot = motDe(ligne.ref);
       if (mot && !deja.has(ligne.ref) && ajouter(mot, ligne.ref, false)) n += 1;
-    }
-    const duJour = (manifeste && manifeste.du_jour) || [];
-    for (let i = 0; i < 200 && n < 40 && duJour.length; i += 1) {
-      const mot = duJour[Math.floor(Math.random() * duJour.length)];
-      if (Lexique.vedette(mot) && ajouter(mot, 'dico:' + mot, false)) n += 1;
     }
     return { liste, fiches: parRef.size };
   }
@@ -121,6 +129,21 @@
   /* La définition d'un mot posé : celle de sa fiche, le mot masqué ; à défaut
    * — hors ligne, tranche pas encore sur l'appareil — l'aperçu de l'index. */
   async function definir(m) {
+    if (!m.ref) {
+      // Un mot des croisements : son indice vient du lexique des fléchés.
+      const vedette = m.vedette || m.mot;
+      m.ref = 'dico:' + vedette;
+      // Le mot exact seulement : la racine de « mil » masquerait « Millet ».
+      let def = m.def;
+      for (const x of new Set([vedette, m.mot])) {
+        const echappe = x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        def = def.replace(new RegExp('(?<![\\p{L}])' + echappe + '(?![\\p{L}])', 'giu'), '…');
+      }
+      if (vedette.length >= 7) def = Exercices.masquer(def, vedette);
+      m.def = Exercices.court(def, 200);
+      delete m.bande;
+      return;
+    }
     let entree = null;
     if (m.ref.startsWith('perso:')) {
       const p = Perso.lire(m.ref.slice(6));
@@ -146,8 +169,19 @@
     e.attente.textContent = 'Composition de la grille…';
     e.attente.hidden = false;
     try {
+      let lex;
+      try {
+        lex = await lexiqueDesFleches();
+      } catch (erreur) {
+        e.attente.textContent = 'Les mots des grilles ne sont pas encore sur l’appareil : '
+          + 'il faut une connexion la première fois.';
+        return;
+      }
       const c = await candidats(avant ? avant.mots.map((m) => m.ref) : []);
-      const grille = Grille.composer(c.liste, { colonnes: COLONNES, lignes: LIGNES });
+      // Le temps d'afficher « Composition… » : composer occupe la page une
+      // seconde ou deux.
+      await new Promise((fin) => setTimeout(fin, 30));
+      const grille = Grille.composer(c.liste, { lexique: lex, colonnes: COLONNES, lignes: LIGNES });
       if (!grille || grille.mots.length < 3) {
         e.attente.textContent = 'Impossible de composer une grille pour l’instant.';
         return;
@@ -183,7 +217,7 @@
       if (c.type === 'def') {
         noeud = bouton('case def', '', () => toucherDefinition(p));
         noeud.setAttribute('aria-label', 'Définition');
-        for (const n of c.defs) noeud.appendChild(element('span', null, FLECHES[partie.mots[n].sens]));
+        for (const n of c.defs) noeud.appendChild(element('span', null, Grille.fleche(partie.mots[n])));
       } else if (c.type === 'lettre') {
         noeud = bouton('case lettre', '', () => toucherLettre(p));
       } else {
@@ -193,7 +227,9 @@
       return noeud;
     });
     e.jeu.hidden = false;
-    const premier = partie.mots.findIndex((m) => !m.trouve);
+    // On commence par un mot des fiches : c'est pour eux qu'on joue.
+    let premier = partie.mots.findIndex((m) => !m.trouve && m.prioritaire);
+    if (premier === -1) premier = partie.mots.findIndex((m) => !m.trouve);
     actif = { mot: -1, pos: -1 };
     if (premier !== -1) choisir(premier);
     dessinerOrigine();
@@ -202,13 +238,12 @@
 
   function dessinerOrigine() {
     const n = partie.mots.filter((m) => m.prioritaire).length;
-    const total = partie.mots.length;
-    e.origine.textContent = n === total ? 'Tous les mots de cette grille viennent de vos fiches.'
-      : (n ? Outils.nombre(n, 'mot') + ' sur ' + total + (n > 1 ? ' viennent' : ' vient')
-        + ' de vos fiches ; les autres complètent la grille.'
-        : (partie.fiches ? 'Aucun mot de vos fiches ne tenait dans cette grille : elle est faite de mots du jour.'
-          : 'Vous n’avez pas encore de fiches : cette grille est faite de mots du jour. '
-            + 'Les mots que vous ajouterez à vos fiches viendront ici.'));
+    e.origine.textContent = n
+      ? Outils.nombre(n, 'mot') + ' de vos fiches, marqués « mes fiches » ; les mots courants '
+        + 'qui les croisent sont là pour vous mettre sur la voie.'
+      : (partie.fiches ? 'Aucun mot de vos fiches ne tenait dans cette grille : touchez « Nouvelle grille ».'
+        : 'Vous n’avez pas encore de fiches : cette grille est faite de mots courants. '
+          + 'Les mots que vous ajouterez à vos fiches viendront ici.');
   }
 
   const verrouillee = (p) => plan.cases[p].mots.some((n) => partie.mots[n].trouve);
@@ -245,7 +280,7 @@
       return;
     }
     const tete = element('p', 'indice-tete');
-    tete.appendChild(element('span', 'indice-fleche', FLECHES[m.sens]));
+    tete.appendChild(element('span', 'indice-fleche', Grille.fleche(m)));
     if (m.nature) tete.appendChild(element('span', 'nature-courte', m.nature));
     tete.appendChild(element('span', 'discret', m.k.length + ' lettres'));
     if (m.prioritaire) tete.appendChild(element('span', 'pastille', 'mes fiches'));
@@ -296,11 +331,16 @@
     peindre();
   }
 
+  /* Le mot suivant : le prochain mot des fiches encore à trouver, à défaut
+   * le prochain tout court. */
   function motSuivant() {
     const total = partie.mots.length;
-    for (let i = 1; i <= total; i += 1) {
-      const n = (actif.mot + i) % total;
-      if (!partie.mots[n].trouve) { choisir(n); return; }
+    for (const fiches of [true, false]) {
+      for (let i = 1; i <= total; i += 1) {
+        const n = (actif.mot + i) % total;
+        const m = partie.mots[n];
+        if (!m.trouve && (m.prioritaire || !fiches)) { choisir(n); return; }
+      }
     }
   }
 
@@ -438,14 +478,29 @@
     zone.appendChild(element('p', 'discret', seul === total
       ? 'Les ' + total + ' mots trouvés sans aide — bravo.'
       : Outils.nombre(seul, 'mot trouvé', 'mots trouvés') + ' sans aide sur ' + total + '.'));
-    const liste = element('ul', 'liste-liee');
-    for (const m of partie.mots) {
-      const li = element('li');
-      li.appendChild(bouton('lie', m.mot, () => ouvrirFiche(m)));
-      li.appendChild(element('span', 'precision', ' — ' + Exercices.court(m.def, 90)));
-      liste.appendChild(li);
+    /* Les mots des fiches d'abord, ceux qu'on révisait ; les mots des
+     * croisements, repliés : une grille pleine en compte une trentaine. */
+    const lister = (mots) => {
+      const liste = element('ul', 'liste-liee');
+      for (const m of mots) {
+        const li = element('li');
+        li.appendChild(bouton('lie', m.mot, () => ouvrirFiche(m)));
+        li.appendChild(element('span', 'precision', ' — ' + Exercices.court(m.def, 90)));
+        liste.appendChild(li);
+      }
+      return liste;
+    };
+    const miens = partie.mots.filter((m) => m.prioritaire);
+    const autres = partie.mots.filter((m) => !m.prioritaire);
+    if (miens.length) zone.appendChild(lister(miens));
+    if (autres.length) {
+      const plus = element('details', 'bilan-autres');
+      plus.appendChild(element('summary', null, miens.length
+        ? Outils.nombre(autres.length, 'autre mot', 'autres mots') + ' de la grille'
+        : 'Les ' + autres.length + ' mots de la grille'));
+      plus.appendChild(lister(autres));
+      zone.appendChild(plus);
     }
-    zone.appendChild(liste);
     zone.appendChild(bouton('bouton-principal', 'Nouvelle grille', () => nouvelle(false)));
   }
 

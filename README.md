@@ -70,16 +70,20 @@ Une fiche ratée repasse en fin de séance. L'onglet Réviser montre ce qui est
 dû, la série de jours d'affilée et la part des fiches acquises ; un
 **entraînement libre** permet de s'exercer sans toucher au calendrier.
 
-**Jouer : les mots fléchés.** L’onglet Fléchés compose une grille avec les
-mots des fiches de révision, les plus fragiles d’abord ; s’il en manque pour
-garnir la grille, des mots consultés récemment et des mots du jour la
-complètent. Chaque mot part d’une case fléchée, et sa définition — celle de la
-fiche, le mot masqué — s’affiche au-dessus de la grille. Un mot juste se
-verrouille en vert ; trois aides : une lettre, le mot, les lettres fausses. La
-grille en cours est gardée sur l’appareil. Le calendrier des fiches ne bouge
-pas : un mot trouvé sans aide compte comme une réponse d’entraînement libre.
-Seuls entrent les mots d’un seul tenant de 3 à 11 lettres, sans accents dans
-la grille (*égérie* s’écrit EGERIE).
+**Jouer : les mots fléchés.** L’onglet Fléchés compose une grille pleine,
+comme celles des journaux : pas une case perdue, presque chaque lettre sert à
+deux mots. Les mots des fiches de révision y sont posés d’abord, les plus
+fragiles en tête, puis les mots consultés récemment s’ils tiennent ; les
+croisements sont faits de mots courants (*bec*, *osé*, *rit*), qui donnent
+les lettres mettant sur la voie des mots rares. Chaque mot part d’une case
+fléchée (→ ↓, et sur les bords ↳ ↴) ; sa définition — celle de la fiche, le
+mot masqué — s’affiche au-dessus de la grille, avec la pastille « mes fiches »
+pour les mots qu’on révise. Un mot juste se verrouille en vert ; trois aides :
+une lettre, le mot, les lettres fausses. La grille en cours est gardée sur
+l’appareil. Le calendrier des fiches ne bouge pas : un mot des fiches trouvé
+sans aide compte comme une réponse d’entraînement libre. Seuls entrent les
+mots d’un seul tenant de 3 à 10 lettres, sans accents dans la grille
+(*égérie* s’écrit EGERIE).
 
 **Annoter.** Chaque fiche a son bloc « Mes notes » : un moyen mnémotechnique,
 la phrase où l'on a croisé le mot. La note s'enregistre d'elle-même, revient
@@ -166,6 +170,7 @@ pip install wordfreq==3.1.1     # une fois : ses fréquences voyagent dans le pa
 python build/telecharger.py   # Wiktionnaire (≈ 700 Mo), Lexique 3.83, Grammalecte, wordfreq
 python build/extraire.py      # ≈ 2 min : les mots français, en extrait compact
 python build/construire.py    # ≈ 1 min : data/dico/ et data/manifeste.json
+python build/fleches.py       # (refait par construire.py) le lexique des mots fléchés seul
 python build/verifier.py      # intégrité des données + épreuves JavaScript
 ```
 
@@ -175,7 +180,7 @@ que `build/etiquettes.py` ne sait pas encore traduire.
 ## Épreuves
 
 ```
-node build/essais.mjs            # recherche, liens, correction, calendrier, grilles, mots actuels (108 cas)
+node build/essais.mjs            # recherche, liens, correction, calendrier, grilles, mots actuels (115 cas)
 python build/verifier.py         # données : tri, tranches, clés Python = JS
 node build/essais_hors_ligne.mjs # serveur arrêté : l'application tient (12 cas)
 node build/captures.mjs          # parcours complet au format téléphone, captures
@@ -194,7 +199,8 @@ affichage (`build/pilote_chrome.mjs`, repris de Wortschatz).
 | `js/revision.js` | le calendrier (SM-2), les séances |
 | `js/exercices.js` | les questions et leur correction |
 | `js/seance.js` | l'onglet Réviser |
-| `js/grille.js` | le compositeur de grilles de mots fléchés |
+| `js/grille.js` | le compositeur de grilles pleines : semis, motif, remplissage |
+| `build/fleches.py` | `data/dico/fleches.idx`, les mots des croisements et leurs indices |
 | `js/fleches.js` | l'onglet Fléchés |
 | `js/notes.js` | les notes |
 | `js/perso.js` | les mots à soi et leur formulaire |
