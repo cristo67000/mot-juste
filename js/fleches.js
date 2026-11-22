@@ -285,6 +285,10 @@
     tete.appendChild(element('span', 'discret', m.k.length + ' lettres'));
     if (m.prioritaire) tete.appendChild(element('span', 'pastille', 'mes fiches'));
     zone.appendChild(tete);
+    // Le dessin du sens, s'il y en a un : un fléché illustré. Sans légende.
+    const f = m.ref && m.ref.startsWith('dico:') && racine.Illustrations
+      ? Illustrations.pourSens(m.ref.slice(5), m.def) : null;
+    if (f) zone.appendChild(Illustrations.figure(f, { mode: 'muette' }));
     zone.appendChild(element('p', 'indice-definition', m.def));
     if (m.trouve) {
       const p = element('p', 'indice-trouve');

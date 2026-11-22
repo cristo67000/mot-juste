@@ -134,6 +134,8 @@
     tete.appendChild(element('span', 'nature-courte', entree.l[0].nat));
     bloc.appendChild(tete);
     const x = Exercices.premierSens(entree, false);
+    const dessin = x && Illustrations.pourSens(entree.m, x.s.d);
+    if (dessin) bloc.appendChild(Illustrations.figure(dessin, { mode: 'muette' }));
     if (x) bloc.appendChild(element('p', 'du-jour-def', Exercices.court(x.s.d, 180)));
     if (entree.et && entree.et[0]) {
       const phrase = entree.et[0][0].split(/(?<=\.)\s/)[0];
@@ -172,9 +174,36 @@
     if (expression) zone.appendChild(bouton('suggestion', expression.mot, () => Fiche.ouvrir({ mot: expression.mot })));
   }
 
+  /* Les planches illustrées, rangées par thème, repliées : un toucher ouvre
+   * la fiche du sujet à la planche. */
+  function dessinerPlanches() {
+    const zone = e.planches;
+    if (zone.childElementCount) return;
+    const groupes = Illustrations.sommaire();
+    if (!groupes.size) return;
+    const details = element('details', 'sommaire-planches');
+    const titre = element('summary');
+    let n = 0;
+    for (const liste of groupes.values()) n += liste.length;
+    titre.appendChild(element('span', null, 'Planches illustrées'));
+    titre.appendChild(element('span', 'compte', Outils.nombre(n, 'planche') + ', '
+      + Illustrations.nombreDeDessins().toLocaleString('fr-FR') + ' dessins'));
+    details.appendChild(titre);
+    for (const [groupe, liste] of groupes) {
+      details.appendChild(element('p', 'sommaire-groupe', groupe));
+      const bloc = element('div', 'voisins');
+      for (const p of liste) {
+        bloc.appendChild(bouton('voisin', p.titre, () => Illustrations.ouvrir(p.sujets[0], p.id)));
+      }
+      details.appendChild(bloc);
+    }
+    zone.appendChild(details);
+  }
+
   function dessinerAccueil() {
     dessinerDuJour();
     dessinerRecents();
+    dessinerPlanches();
     dessinerSuggestions();
     peindreHorsLigne(Paquets.dernierEtat);
   }
@@ -363,7 +392,7 @@
     Sauvegarde.dessiner(e.zoneSauvegarde);
     Installer.dessiner();
     const version = (racine.MiseAJour && MiseAJour.version) || '';
-    e.versions.textContent = 'Application ' + (version || 'v1.3.0') + ' · dictionnaire du '
+    e.versions.textContent = 'Application ' + (version || 'v1.4.0') + ' · dictionnaire du '
       + Outils.dateLisible(manifeste.construit + 'T12:00:00') + '.';
     await dessinerDictionnaire();
   }
@@ -416,7 +445,7 @@
       q: $('q'), qVider: $('q-vider'), accueil: $('accueil'), resultats: $('resultats'),
       expressions: $('resultats-expressions'), rien: $('rien'), rienConseil: $('rien-conseil'),
       ajouter: $('b-ajouter-depuis-recherche'), onglets: $('onglets'), duJour: $('du-jour'),
-      recents: $('recents'), suggestions: $('suggestions'), horsLigne: $('etat-hors-ligne'),
+      recents: $('recents'), planches: $('planches-accueil'), suggestions: $('suggestions'), horsLigne: $('etat-hors-ligne'),
       etatDico: $('etat-dictionnaire'), zoneTelechargement: $('zone-telechargement'),
       nouveautes: $('reglage-nouveautes'), sens: $('reglage-sens'), mode: $('reglage-mode'),
       reglageVoix: $('reglage-voix'), zoneVoix: $('zone-voix'), zoneSauvegarde: $('zone-sauvegarde'),

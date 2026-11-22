@@ -170,7 +170,8 @@
     if (!x) return null;
     const definition = court(pourMot ? masquer(x.s.d, entree.m) : x.s.d);
     const nature = x.l.nat || '';
-    const question = { forme, carte, entree, definition, nature, marques: x.s.r || [] };
+    // `brut` : la définition entière, non masquée — pour reconnaître son dessin.
+    const question = { forme, carte, entree, definition, brut: x.s.d, nature, marques: x.s.r || [] };
 
     if (forme === 'trou') {
       const t = phraseATrou(entree);

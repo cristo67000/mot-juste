@@ -200,6 +200,14 @@
     return bloc;
   }
 
+  /* Le dessin du sens demandé, sans légende : un indice pour retrouver le
+   * mot, jamais pour retrouver le sens (il le donnerait). */
+  function indiceDessine(q, definition) {
+    if (q.entree.perso || !racine.Illustrations) return null;
+    const f = Illustrations.pourSens(q.entree.m, definition);
+    return f ? Illustrations.figure(f, { mode: 'muette' }) : null;
+  }
+
   function dessiner(q) {
     avancer();
     e['seance-verdict'].hidden = true;
@@ -220,9 +228,13 @@
       enonce.appendChild(element('p', 'enonce-indice', 'Sens : ' + Exercices.court(
         Exercices.masquer(t.definition, q.entree.m), 160)));
       enonce.appendChild(element('p', 'enonce-indice', 'Indice : ' + Exercices.indice(t.cible)));
+      const dessin = indiceDessine(q, t.definition);
+      if (dessin) enonce.appendChild(dessin);
     } else if (pourMot) {
       enonce.appendChild(enonceDefinition(q));
       if (q.forme === 'saisie') enonce.appendChild(element('p', 'enonce-indice', 'Indice : ' + q.indice));
+      const dessin = indiceDessine(q, q.brut || q.definition);
+      if (dessin) enonce.appendChild(dessin);
     } else {
       enonce.appendChild(enonceMot(q));
     }
@@ -308,10 +320,12 @@
       bloc.appendChild(p);
     }
     let n = 0;
+    let dessin = null;
     for (const l of entree.l) {
       for (const s of l.s) {
         if (!s.d || s.p || n >= 3) continue;
         n += 1;
+        if (!dessin && !entree.perso && racine.Illustrations) dessin = Illustrations.pourSens(entree.m, s.d);
         const d = element('p', 'verso-sens');
         d.appendChild(element('span', 'numero-sens', n + '. '));
         if (s.r && s.r.length) d.appendChild(element('span', 'marque-discrete', '(' + s.r.join(', ') + ') '));
@@ -331,6 +345,7 @@
     for (const l of entree.l) for (const x of l.ant || []) if (ant.length < 4 && ant.indexOf(x[0]) === -1) ant.push(x[0]);
     if (syn.length) bloc.appendChild(element('p', 'verso-proches', '≈ ' + syn.join(', ')));
     if (ant.length) bloc.appendChild(element('p', 'verso-proches', '≠ ' + ant.join(', ')));
+    if (dessin) bloc.appendChild(Illustrations.figure(dessin, { mode: 'verso' }));
     return bloc;
   }
 

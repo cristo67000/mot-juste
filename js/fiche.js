@@ -5,9 +5,10 @@
  * Dans l'ordre où on la lit : le mot, sa prononciation et sa fréquence ; les
  * boutons qui servent (fiches de révision, note) ; puis, pour chaque nature —
  * « feu » est nom, adjectif et adverbe —, ses sens numérotés avec leurs
- * marques d'usage, leurs citations et leurs synonymes et contraires ; enfin ce
- * qui vaut pour le mot entier : étymologie, locutions et expressions,
- * proverbes, dérivés, vocabulaire apparenté, et mes notes.
+ * marques d'usage, leurs citations et leurs synonymes et contraires — et,
+ * sous le sens qu'il montre, le dessin du mot ; les planches où il paraît ;
+ * enfin ce qui vaut pour le mot entier : étymologie, locutions et
+ * expressions, proverbes, dérivés, vocabulaire apparenté, et mes notes.
  *
  * Une entrée du dictionnaire et un mot à soi s'affichent de la même façon :
  * `Perso.enEntree()` met le second dans la forme de la première.
@@ -24,6 +25,7 @@
   const { element, bouton } = Outils;
 
   // Au-delà, les sens suivants se déplient à la demande : « faire » en a quarante.
+  // Un sens illustré reste toujours visible.
   const SENS_VISIBLES = 8;
 
   const BANDES = ['très courant', 'courant', 'moins courant', 'rare'];
@@ -117,6 +119,11 @@
     entreeAffichee = entree;
     dessiner(entree);
     panneau.scrollTop = 0;
+    // Venue de la liste des planches : on va droit à la planche.
+    if (cible.planche) {
+      const section = contenu.querySelector('[data-planche="' + cible.planche + '"]');
+      if (section) section.scrollIntoView({ block: 'start' });
+    }
     Store.consulter(refDe(cible), entree.m).catch(() => {});
   }
 
@@ -210,10 +217,17 @@
     // différentes (« son » le bruit et « son » du blé), chacune a la sienne.
     const etymologies = e.et || [];
     const plusieurs = etymologies.length > 1;
+    const illustrations = Illustrations.pourEntree(e);
 
     e.l.forEach((lecture, numero) => {
-      contenu.appendChild(dessinerLecture(e, lecture, numero, plusieurs));
+      contenu.appendChild(dessinerLecture(e, lecture, numero, plusieurs, illustrations.figures));
     });
+
+    // Les planches où paraît le mot : en bandeau s'il en est une case, en
+    // entier s'il en est le sujet.
+    for (const { planche, item } of illustrations.planches) {
+      contenu.appendChild(Illustrations.planche(planche, item));
+    }
 
     if (etymologies.length) {
       const section = rubrique('Étymologie', 'etymologie');
@@ -298,7 +312,7 @@
     return ligne;
   }
 
-  function dessinerLecture(e, lecture, numero, plusieurs) {
+  function dessinerLecture(e, lecture, numero, plusieurs, figures) {
     const section = element('section', 'lecture');
     if (lecture.nat || e.l.length > 1) {
       const nature = element('p', 'nature');
@@ -331,6 +345,7 @@
       const d = element('p', 'definition');
       d.appendChild(MotsVifs.texte(s.d, { exclue: e.m }));
       corps.appendChild(d);
+      if (figures && figures.has(s)) corps.appendChild(Illustrations.figure(figures.get(s), { mode: 'sens' }));
       if (s.v && s.v.length) {
         const v = element('p', 'renvoi');
         v.appendChild(document.createTextNode('→ '));
@@ -340,7 +355,7 @@
       for (const x of s.x || []) corps.appendChild(citation(x, e.m));
       if (s.n) corps.appendChild(element('p', 'note-usage', s.n));
       li.appendChild(corps);
-      if (rang >= SENS_VISIBLES) { li.hidden = true; cachees.push(li); }
+      if (rang >= SENS_VISIBLES && !(figures && figures.has(s))) { li.hidden = true; cachees.push(li); }
       liste.appendChild(li);
     });
     section.appendChild(liste);

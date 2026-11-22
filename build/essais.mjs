@@ -403,5 +403,100 @@ console.log('Mots fléchés');
     vieux.cases[0].type === 'def' && vieux.traces[0].join() === '1,2,3' && Grille.fleche(ancienne.mots[0]) === '→');
 }
 
+// ── Les illustrations ───────────────────────────────────────────────────────
+console.log('Illustrations');
+{
+  const PLANCHES = ['js/illustrations.js', 'js/planches-corps.js', 'js/planches-formes.js', 'js/planches-signes.js',
+    'js/planches-couleurs.js', 'js/planches-objets.js'];
+  for (const f of PLANCHES) vm.runInContext(lire(f), contexte, { filename: f });
+  const { Illustrations } = contexte;
+  const css = lire('css/app.css');
+  const aSaFiche = (mot) => !!(Lexique.vedette(mot) && Lexique.vedette(mot).mot === mot);
+  const absents = [];
+  const sansSens = [];
+  const sansSujet = [];
+  const malFormes = [];
+  const classes = new Set();
+  const revelateurs = [];
+
+  /* Le petit langage des dessins (js/illustrations.js), relu sans navigateur. */
+  function relire(code, ou, mot) {
+    let reste = String(code).trim();
+    while (reste[0] === '.' || reste[0] === '#') {
+      const fin = reste.search(/\s/);
+      const jeton = reste.slice(0, fin);
+      reste = reste.slice(fin).trim();
+      if (jeton[0] === '#') { if (!/^#[0-9a-fA-F]{3,6}$/.test(jeton)) malFormes.push(ou + ' : ' + jeton); } else for (const c of jeton.split('.')) if (c) classes.add(c);
+    }
+    const lettre = reste[0];
+    const args = reste.slice(1).trim();
+    const nombres = args.split(/[\s,]+/).filter(Boolean);
+    const chiffres = (n) => nombres.length === n && nombres.every((x) => Number.isFinite(Number(x)));
+    let bon = false;
+    if (lettre === 'M' || lettre === 'm') bon = /^[MmLlHhVvCcSsQqTtAaZz0-9.,\s-]+$/.test(reste) && !/NaN|undefined/.test(reste);
+    else if (lettre === 'C') bon = chiffres(3);
+    else if (lettre === 'E') bon = chiffres(4);
+    else if (lettre === 'R') bon = chiffres(4) || chiffres(5);
+    else if (lettre === 'T') {
+      const m = args.match(/^(\S+)\s+(\S+)\s+(\S+)\s+([\s\S]+)$/);
+      bon = !!m && [m[1], m[2], m[3]].every((x) => Number.isFinite(Number(x)));
+      // En indice d'une question, le dessin ne doit pas donner la réponse.
+      if (m && mot && mot.length >= 3 && Lexique.cle(m[4]).includes(Lexique.cle(mot))) revelateurs.push(ou);
+    }
+    if (!bon) malFormes.push(ou + ' : ' + String(code).slice(0, 50));
+  }
+  const aplatir = (d) => (Array.isArray(d) ? d.flatMap(aplatir) : (d ? [d] : []));
+
+  let mots = 0;
+  for (const p of Illustrations.planches) {
+    if (!(p.sujets || []).some(aSaFiche)) sansSujet.push(p.id);
+    if (p.schema) aplatir(p.d).forEach((code, i) => relire(code, p.id + '[' + i + ']', null));
+    for (const item of p.items) {
+      if (p.schema && ![item.x, item.y, item.lx, item.ly].every(Number.isFinite)) malFormes.push(p.id + ' · ' + item.mot + ' : repère');
+      if (!p.schema) aplatir(item.d).forEach((code, i) => relire(code, p.id + ' · ' + item.mot + '[' + i + ']', item.mot));
+      for (const mot of [item.mot].concat(item.aussi || [])) {
+        mots += 1;
+        if (!aSaFiche(mot)) { absents.push(p.id + ' · ' + mot); continue; }
+        if ('sens' in item && item.sens === false) continue;
+        const re = 'sens' in item ? item.sens : p.sens;
+        const entree = await Lexique.entree(mot);
+        if (!re || !entree.l.some((l) => l.s.some((s) => s.d && re.test(s.d)))) sansSens.push(p.id + ' · ' + mot);
+      }
+    }
+  }
+  cas(`${Illustrations.planches.length} planches, ${mots} mots : chacun a sa fiche`, Illustrations.planches.length >= 40 && !absents.length, absents);
+  cas('chaque dessin reconnaît le sens qu’il montre (après une reconstruction aussi)', !sansSens.length, sansSens);
+  cas('chaque planche a un sujet au dictionnaire', !sansSujet.length, sansSujet);
+  cas('les dessins sont bien formés', !malFormes.length, malFormes.slice(0, 6));
+  const orphelines = [...classes].filter((c) => !css.includes('.i-' + c + ' ') && !css.includes('.i-' + c + '.') && !css.includes('.i-' + c + ','));
+  cas('toutes leurs classes sont dans la feuille de style', !orphelines.length, orphelines);
+  cas('aucun dessin n’écrit le mot qu’il illustre', !revelateurs.length, revelateurs);
+
+  const sensDe = async (mot, re) => (await Lexique.entree(mot)).l.flatMap((l) => l.s).find((s) => s.d && re.test(s.d));
+  const aquilin = await Lexique.entree('aquilin');
+  let f = Illustrations.pourEntree(aquilin);
+  cas('« aquilin » : le dessin sous le nez en bec d’aigle, pas sous « traits du visage »',
+    f.figures.size === 1 && /nez/.test([...f.figures.keys()][0].d) && f.planches[0].planche.id === 'nez', [...f.figures.keys()].map((s) => s.d));
+  cas('« busqué » : au nez bombé, jamais à l’écluse',
+    !!Illustrations.pourSens('busqué', (await sensDe('busqué', /bombé/)).d) && !Illustrations.pourSens('busqué', (await sensDe('busqué', /écluse/)).d));
+  f = Illustrations.pourEntree(await Lexique.entree('cloche'));
+  cas('« cloche » : le chapeau, sous son sens de chapeau',
+    f.figures.size === 1 && /Chapeau de femme/.test([...f.figures.keys()][0].d));
+  f = Illustrations.pourEntree(await Lexique.entree('nez'));
+  cas('« nez » : la planche entière, sans dessin de sens', f.figures.size === 0 && f.planches.length === 1 && f.planches[0].item === null);
+  f = Illustrations.pourEntree(await Lexique.entree('rouflaquette'));
+  cas('« rouflaquette » : favoris au sens 1, accroche-cœur au sens 2, deux planches',
+    f.figures.size === 2 && f.planches.map((x) => x.planche.id).join() === 'barbes,coiffures', f.planches.map((x) => x.planche.id));
+  f = Illustrations.pourEntree(await Lexique.entree('carreau'));
+  cas('« carreau » (sens: false) : sur la planche des cartes, aucun dessin de sens', f.figures.size === 0 && f.planches[0].planche.id === 'cartes');
+  cas('un mot à soi n’a pas de dessin, même homonyme', Illustrations.pourEntree({ perso: 'p1', m: 'aquilin', l: aquilin.l }).figures.size === 0);
+  cas('une définition masquée (fléchés) garde son dessin',
+    !!Illustrations.pourSens('losange', Exercices.masquer((await sensDe('losange', /quadrilatère/)).d, 'losange')));
+  const sw = lire('sw.js');
+  const page = lire('index.html');
+  cas('la coquille installe les planches, la page les charge avant la fiche', PLANCHES.every((x) => sw.includes("'" + x + "'")
+    && page.includes('src="' + x + '"')) && page.indexOf('js/planches-objets.js') < page.indexOf('js/fiche.js'));
+}
+
 console.log(`\n${total - fautes}/${total} cas conformes`);
 process.exit(fautes ? 1 : 0);

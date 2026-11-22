@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+  <title>Le Mot juste — toutes les planches</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body class="apercu-planches">
+  <!-- Pour l'auteur des dessins : toutes les planches d'un coup, sans
+       dictionnaire. `python -m http.server 8144` à la racine, puis
+       http://localhost:8144/build/planches.html (?planche=nez pour une seule). -->
+  <main id="scene">
+    <h2>Toutes les planches</h2>
+    <p class="discret" id="compte"></p>
+    <div id="planches"></div>
+  </main>
+  <script src="../js/outils.js"></script>
+  <script src="../js/illustrations.js"></script>
+  <script src="../js/planches-corps.js"></script>
+  <script src="../js/planches-formes.js"></script>
+  <script src="../js/planches-signes.js"></script>
+  <script src="../js/planches-couleurs.js"></script>
+  <script src="../js/planches-objets.js"></script>
+  <script src="planches.js"></script>
+</body>
+</html>

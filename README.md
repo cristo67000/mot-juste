@@ -45,6 +45,29 @@ d'une étymologie, un synonyme, une locution : un toucher l'ouvre, et « ← feu
 ramène d'où l'on vient (le bouton Retour du téléphone aussi). Un mot absent du
 dictionnaire reste du texte — jamais de lien mort.
 
+**Voir : les planches illustrées.** Ce que les mots disent mal, un dessin le
+montre : 45 planches, près de 500 dessins au trait, pour 516 mots. Les formes
+du nez (*aquilin*, *busqué*, *camus*, *retroussé*…), les barbes, les
+coiffures, les chapeaux, les cols ; le visage, l'œil, la main en schémas
+numérotés ; les figures et les solides de géométrie, les phases de la Lune,
+les nuages, les formes des feuilles ; les arcs, les ordres, le château fort,
+les toits ; les motifs d'étoffes (*pied-de-poule*, *vichy*), le blason
+(partitions, pièces, émaux et leurs hachures) ; la ponctuation, la
+typographie, les notes de musique, l'alphabet grec ; quatre-vingt-dix
+nuances (*céladon*, *zinzolin*, *bistre*), peintes du code que donne le
+Wiktionnaire quand il le donne, et les robes du cheval ; les armes blanches,
+les vases, les ustensiles.
+
+Chaque dessin s'attache à **un sens**, jamais au mot entier : *busqué* n'est
+dessiné qu'au nez bombé, pas à l'écluse ; *pommette* au visage, pas à
+l'ornement. Sur la fiche, il paraît sous ce sens ; la planche suit, en
+bandeau, la case du mot mise en avant (« Toute la planche → »), ou en entier
+sur la fiche de son sujet (*nez*, *chapeau*, *blason*). Au verso d'une
+révision, le dessin accompagne le mot ; quand il faut retrouver le mot
+d'après sa définition, il sert d'indice, sans légende — jamais quand il
+faut retrouver le sens, il le donnerait. Les mots fléchés illustrés ont leur
+dessin à côté de la définition, et l'accueil la liste des planches.
+
 **Le mot du jour.** L'accueil propose chaque jour un mot choisi parmi six mille
 mots courants mais pas banals, avec sa définition et son origine.
 
@@ -180,7 +203,7 @@ que `build/etiquettes.py` ne sait pas encore traduire.
 ## Épreuves
 
 ```
-node build/essais.mjs            # recherche, liens, correction, calendrier, grilles, mots actuels (115 cas)
+node build/essais.mjs            # recherche, liens, correction, calendrier, grilles, mots actuels, illustrations (130 cas)
 python build/verifier.py         # données : tri, tranches, clés Python = JS
 node build/essais_hors_ligne.mjs # serveur arrêté : l'application tient (12 cas)
 node build/captures.mjs          # parcours complet au format téléphone, captures
@@ -189,6 +212,14 @@ node build/captures.mjs          # parcours complet au format téléphone, captu
 `captures.mjs` et `essais_hors_ligne.mjs` pilotent un vrai Chrome sans
 affichage (`build/pilote_chrome.mjs`, repris de Wortschatz).
 
+Les épreuves des illustrations vérifient que chaque mot dessiné existe, que
+l'expression de chaque dessin reconnaît encore un de ses sens — une
+reconstruction du dictionnaire qui ferait disparaître un sens ne laisse pas
+un dessin au mauvais endroit —, que les dessins sont bien formés et qu'aucun
+n'écrit le mot qu'il illustre. Pour les regarder tous d'un coup :
+`build/planches.html` (servi à la racine ; `?planche=nez` pour une seule,
+avec ses figures en grand).
+
 ## Organisation du code
 
 | Fichier | Rôle |
@@ -196,6 +227,8 @@ affichage (`build/pilote_chrome.mjs`, repris de Wortschatz).
 | `js/lexique.js` | index en mémoire, recherche, formes fléchies, tranches |
 | `js/fiche.js` | la fiche d'un mot, sa pile de navigation |
 | `js/motsvifs.js` | les mots cliquables dans les textes |
+| `js/illustrations.js` | le tracé des dessins, les planches, à quel sens va quel dessin |
+| `js/planches-*.js` | les dessins : corps, formes, signes, couleurs, objets |
 | `js/revision.js` | le calendrier (SM-2), les séances |
 | `js/exercices.js` | les questions et leur correction |
 | `js/seance.js` | l'onglet Réviser |

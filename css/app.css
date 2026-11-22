@@ -667,6 +667,124 @@ body.fiche-ouverte #annonce, body.panneau-ouvert #annonce { bottom: calc(env(saf
 .lien-annonce { border: 0; background: transparent; color: var(--papier); font-weight: 700;
   text-decoration: underline; cursor: pointer; padding: .3rem; }
 
+/* ————— Illustrations —————
+   Des dessins au trait (js/illustrations.js). Le trait suit l'encre du thème ;
+   ce que le mot nomme est à l'accent. Les couleurs vraies — une pastille de
+   céladon, un émail du blason — sont données par le dessin et ne changent pas
+   avec le thème. Le cache `.i-m` rogne une forme à la couleur du fond : chaque
+   dessin repose donc sur `--ill-fond`. */
+
+:root { --ill-fond: var(--papier-releve); }
+
+.ill-svg {
+  display: block; width: 100%; height: auto; overflow: hidden;
+  fill: none; stroke: var(--encre); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+}
+.ill-svg text { fill: var(--encre); stroke: none; font-family: var(--serif); text-anchor: middle; }
+.ill-svg .i-a { stroke: var(--accent); stroke-width: 2.6; }
+.ill-svg .i-d { stroke: var(--encre-tres-douce); stroke-width: 1.8; }
+.ill-svg .i-e { stroke: var(--encre-douce); stroke-width: 1.4; }
+.ill-svg .i-n { stroke-width: 1.2; }
+.ill-svg .i-sn { stroke: none; }
+.ill-svg .i-g { stroke-width: 3.6; }
+.ill-svg .i-ep { stroke-width: 6; stroke-linecap: butt; }
+.ill-svg .i-t { stroke-dasharray: 3 3.5; }
+.ill-svg .i-f { fill: var(--encre); stroke: none; }
+.ill-svg .i-fa { fill: var(--accent); stroke: none; }
+.ill-svg .i-ft { fill: var(--accent-clair); }
+.ill-svg .i-fp { fill: var(--ill-fond); }
+.ill-svg .i-fd { fill: var(--trait); }
+.ill-svg .i-fi { fill: var(--encre-tres-douce); stroke: none; }
+.ill-svg .i-p { stroke: var(--ill-fond); }
+.ill-svg .i-m { fill: var(--ill-fond); stroke: none; fill-rule: evenodd; }
+.ill-svg .i-lune { fill: #efe5c4; stroke: none; }
+.ill-svg .i-h { stroke: rgba(0, 0, 0, .4); stroke-width: 1.1; }
+.ill-svg .i-hc { stroke: rgba(255, 255, 255, .45); stroke-width: 1.1; }
+.ill-svg .i-hp { fill: rgba(0, 0, 0, .45); stroke: none; }
+.ill-svg .i-vy { fill: #c62a2a; fill-opacity: .45; stroke: none; }
+.ill-svg .i-tv { fill: #000; fill-opacity: .35; stroke: none; }
+.ill-svg .i-cheval-trait { stroke: rgba(0, 0, 0, .5); stroke-width: 1.6; }
+.ill-svg .i-cheval-reflet { stroke: rgba(255, 255, 255, .35); stroke-width: 3; }
+.ill-svg .i-ga { fill: var(--accent); }
+.ill-svg .i-gc { fill: var(--encre); }
+.ill-svg .i-it { font-style: italic; }
+.ill-svg .i-gr { font-weight: 700; }
+.ill-svg .i-s { font-family: var(--sans); font-weight: 700; }
+.ill-svg .i-repere-trait { stroke: var(--accent); stroke-width: .9; }
+.ill-svg .i-repere-trait.i-seul { stroke-width: 1.6; }
+.ill-svg .i-repere-point { fill: var(--accent); stroke: none; }
+.ill-svg .i-repere-pastille { fill: var(--accent); stroke: var(--ill-fond); stroke-width: 1.2; }
+.ill-svg .i-repere-numero { fill: var(--sur-accent); font-family: var(--sans); font-weight: 700; }
+
+.ill { margin: 0; padding: .4rem; background: var(--ill-fond);
+  border: 1px solid var(--trait); border-radius: var(--rayon); }
+.ill-legende { margin: .3rem 0 0; font-family: var(--serif); font-style: italic; font-size: .86rem;
+  line-height: 1.3; color: var(--encre-douce); }
+.ill-legende .lien-discret { padding: 0; font-family: var(--sans); font-style: normal; font-size: .82rem; }
+.ill-mot { font-style: normal; font-weight: 600; color: var(--encre); }
+
+/* Sous le sens qu'il illustre. */
+.ill-sens { width: 9rem; margin: .5rem 0 .3rem; }
+.ill-sens.ill-schema { width: auto; max-width: 18rem; }
+
+/* Au verso d'une fiche de révision : le dessin et son mot. */
+.ill-verso { display: flex; align-items: center; gap: .8rem; margin: .7rem 0 .2rem; }
+.ill-verso .ill-svg { flex: none; width: 5.5rem; }
+.ill-verso.ill-schema .ill-svg { width: 9.5rem; }
+.ill-verso .ill-legende { margin: 0; }
+
+/* Muette : en indice d'une question, d'un fléché, du mot du jour. */
+.ill-muette { width: 7rem; margin: .7rem auto 0; padding: .3rem; }
+.ill-muette.ill-schema { width: 12rem; }
+#fleches-indice .ill-muette { float: right; width: 4.4rem; margin: 0 0 .2rem .6rem; padding: .15rem; }
+#fleches-indice .ill-muette.ill-schema { width: 6.6rem; }
+.carte-du-jour .ill-muette { float: right; width: 5.2rem; margin: .1rem 0 .3rem .8rem; }
+
+/* Les planches. */
+.planche { scroll-margin-top: 4.5rem; }
+.planche-tete { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+.planche-tete .lien-discret { padding: 0; }
+.planche-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.4rem, 1fr)); gap: .45rem; }
+.planche-bandeau {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 5.4rem; gap: .45rem;
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+  padding: 0 0 .5rem;
+}
+.ill-case {
+  display: flex; flex-direction: column; align-items: center; gap: .15rem;
+  padding: .35rem .25rem .45rem; background: var(--ill-fond);
+  border: 1px solid var(--trait); border-radius: 10px; color: inherit; font: inherit;
+  cursor: pointer; scroll-snap-align: center; text-align: center;
+}
+.ill-case .ill-svg { max-width: 4.6rem; }
+.ill-case:hover { border-color: var(--accent); }
+.ill-case.courante { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.ill-case-mot { font-family: var(--serif); font-size: .9rem; line-height: 1.15; color: var(--accent-fort);
+  hyphens: auto; overflow-wrap: break-word; max-width: 100%; }
+.ill-case.courante .ill-case-mot { font-weight: 700; }
+.ill-case-precision { font-size: .68rem; color: var(--encre-tres-douce); letter-spacing: .02em; }
+.ill-case.sans-fiche { cursor: default; }
+.ill-case.sans-fiche .ill-case-mot { color: var(--encre-tres-douce); }
+.planche-note { margin: .5rem 0 0; font-size: .85rem; }
+.ill-planche-schema { max-width: 20rem; margin: 0 auto .6rem; padding: .6rem; }
+.schema-legende { columns: 2 9rem; column-gap: 1.2rem; margin: 0; padding-left: 1.7rem; font-family: var(--serif); }
+.schema-legende li { break-inside: avoid; margin: 0 0 .3rem; }
+.schema-legende li::marker { color: var(--accent); font-family: var(--sans); font-weight: 700; font-size: .85em; }
+.schema-legende li.courante .lie { font-weight: 700; }
+.schema-legende .precision { color: var(--encre-douce); font-style: italic; }
+
+/* Sur l'accueil, la liste des planches. */
+.sommaire-planches { margin: 1.4rem 0 0; }
+.sommaire-planches > summary {
+  cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap;
+  font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--encre-tres-douce); font-weight: 700;
+}
+.sommaire-planches > summary::-webkit-details-marker { display: none; }
+.sommaire-planches > summary::before { content: "▸"; color: var(--accent); }
+.sommaire-planches[open] > summary::before { content: "▾"; }
+.sommaire-planches .compte { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sommaire-groupe { margin: .9rem 0 .35rem; font-family: var(--serif); font-style: italic; color: var(--accent); }
+
 /* ————— Onglets ————— */
 
 #onglets {
