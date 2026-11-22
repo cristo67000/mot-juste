@@ -26,19 +26,23 @@
 
   // ── Le ciel ───────────────────────────────────────────────────────────────
 
-  /* Un nuage bourgeonnant : une suite de bosses posées sur une base plate. */
-  function bosses(x0, y, rayons, ronde) {
-    let x = x0;
-    let d = 'M' + x + ' ' + y;
-    for (const r of rayons) {
-      d += ' A' + r + ' ' + r + ' 0 ' + (ronde ? 1 : 0) + ' 1 ' + (x + 2 * r * 0.8) + ' ' + y;
-      x += 2 * r * 0.8;
-    }
-    return d + ' Z';
+  /* Le ciel d'une case : deux pointillés séparent les trois étages
+   * (supérieur, moyen, inférieur), le sol porte une maison pour l'échelle. */
+  const CIEL = ['.d.t.n M4 36 H96', '.d.t.n M4 62 H96', '.d M4 88 H96', '.d M80 88 V82 L84.5 78.5 L89 82 V88'];
+
+  /* Un petit nuage pommelé, posé en (x, y), large de 14. */
+  function mouton(x, y) {
+    return '.nuage.a.n M' + x + ' ' + (y + 3) + ' C' + (x - 3) + ' ' + (y + 3) + ' ' + (x - 3) + ' ' + (y - 2) + ' ' + (x + 1) + ' ' + (y - 2)
+      + ' C' + (x + 2) + ' ' + (y - 6.5) + ' ' + (x + 9) + ' ' + (y - 6.5) + ' ' + (x + 10) + ' ' + (y - 2)
+      + ' C' + (x + 14) + ' ' + (y - 2.5) + ' ' + (x + 14) + ' ' + (y + 3) + ' ' + (x + 11) + ' ' + (y + 3) + ' Z';
   }
 
-  const SOL = '.d M8 92 L92 92';
-  const PLUIE = '.d M30 70 L27 80 M40 70 L37 82 M50 70 L47 80 M60 70 L57 82 M70 70 L67 80';
+  /* Des traits de pluie, de y0 au sol. */
+  function pluie(x0, x1, y0, pas) {
+    let d = '';
+    for (let x = x0; x <= x1; x += pas || 7) d += 'M' + x + ' ' + y0 + ' L' + (x - 3) + ' ' + Math.min(86, y0 + 12) + ' ';
+    return '.pluie ' + d;
+  }
 
   /* La Lune, disque d'ombre et part éclairée. */
   const LUNE_R = 34;
@@ -244,19 +248,39 @@
     {
       id: 'nuages', titre: 'Nuages', groupe: 'La nature', sujets: ['nuage'],
       sens: /nuage/i,
-      note: 'Rangés du plus haut au plus bas : chaque case montre l’étage du nuage au-dessus du sol.',
+      note: 'Rangés du plus haut au plus bas. Dans chaque case, les deux pointillés séparent les trois étages du ciel : supérieur, moyen, inférieur.',
       items: [
-        { mot: 'cirrus', legende: 'filaments très hauts', d: [SOL, '.a.g M14 22 C30 14 46 16 60 10 M20 32 C38 26 54 28 74 18 M50 38 C62 34 74 34 86 28'] },
-        { mot: 'cirrocumulus', legende: 'petits flocons très hauts', d: [SOL].concat(repeter(10, 16, 14, 86, 40, (x, y) => '.a.ft C ' + (x + ((y / 10) % 2) * 4) + ' ' + y + ' 3')) },
-        { mot: 'cirrostratus', legende: 'voile haut, halo autour du Soleil', d: [SOL, '.ft.d M6 14 H94 V36 H6 Z', '.a C 50 26 5', '.a.t C 50 26 12'] },
-        { mot: 'altocumulus', legende: 'bancs de galets moyens', d: [SOL].concat(repeter(16, 14, 34, 86, 60, (x, y) => '.a.ft ' + bosses(x, y + 6, [3, 4, 3]))) },
-        { mot: 'altostratus', legende: 'nappe grise moyenne', d: [SOL, '.fd.a M6 40 C30 34 70 34 94 40 V58 H6 Z', '.d.t C 50 48 5'] },
-        { mot: 'nimbostratus', legende: 'couche sombre, pluie continue', d: [SOL, '.fi.a M4 30 C30 24 70 24 96 30 V62 H4 Z', PLUIE.replace(/70/g, '66').replace(/80|82/g, '88')] },
-        { mot: 'stratocumulus', legende: 'bancs bas et bosselés', d: [SOL, '.fd.a ' + bosses(6, 74, [6, 8, 7, 9, 6, 8, 7], true)] },
-        { mot: 'stratus', legende: 'couche basse et uniforme', d: [SOL, '.fd.a M4 66 C30 62 70 62 96 66 V80 H4 Z'] },
-        { mot: 'cumulus', legende: 'bourgeonnant, à base plate', d: [SOL, '.a.ft ' + bosses(30, 56, [9, 11], true), '.a.ft ' + bosses(14, 78, [9, 12, 13, 10], true)] },
-        { mot: 'cumulonimbus', legende: 'nuage d’orage, en enclume', d: [SOL, '.fd.a M8 16 C26 8 74 8 94 14 C84 20 70 22 64 24 L36 24 C28 22 16 20 8 16 Z', '.fd.a ' + bosses(28, 50, [8, 10, 8], true), '.fd.a ' + bosses(20, 76, [10, 12, 11, 9], true), '.fd.a M36 24 C30 32 30 40 34 46 L66 46 C70 40 70 32 64 24 Z', '.a M54 76 L48 84 L54 84 L49 92'] },
-        { mot: 'nimbus', sens: /couche épaisse et longue de nuages/, legende: 'nuage sombre qui donne la pluie', d: ['.fi.a ' + bosses(12, 60, [9, 12, 10, 11], true), PLUIE] },
+        { mot: 'cirrus', legende: 'filaments très hauts, en crochets', d: [CIEL,
+          '.a M8 26 C22 24 34 16 48 15 C54 15 57 18 54 21', '.a M24 33 C40 31 54 25 70 23 C76 22 79 25 76 28',
+          '.a.n M40 19 C52 15 64 11 80 11 C85 11 87 14 84 16', '.a.n M12 32 C24 31 32 28 42 24', '.a.n M58 30 C68 29 78 27 88 24'] },
+        { mot: 'cirrocumulus', legende: 'petits flocons très hauts, en rangs', d: [CIEL].concat(repeter(9, 12, 15, 88, 33, (x, y) => '.nuage.a.n C ' + r1(x + ((y - 15) % 12 ? 4.5 : 0)) + ' ' + r1(y + Math.sin(x / 9) * 1.5) + ' 2')) },
+        { mot: 'cirrostratus', legende: 'voile haut, halo autour du Soleil', d: [CIEL, '.soleil C 50 21 5',
+          '.voile M4 10 C30 6 70 6 96 10 V31 C70 34 30 34 4 31 Z', '.a.t C 50 21 13'] },
+        { mot: 'altocumulus', legende: 'bancs de petits nuages pommelés, à mi-hauteur', d: [CIEL,
+          mouton(8, 44), mouton(28, 43), mouton(48, 45), mouton(68, 43), mouton(18, 55), mouton(38, 56), mouton(58, 54), mouton(78, 56)] },
+        { mot: 'altostratus', legende: 'nappe grise à mi-hauteur, le Soleil comme derrière un verre dépoli', d: [CIEL, '.soleil C 62 48 5',
+          '.nuage-gris.trouble.a M4 40 C20 37 40 39 60 37 C76 36 88 38 96 40 V56 C80 59 64 57 48 59 C30 60 16 58 4 56 Z'] },
+        { mot: 'nimbostratus', legende: 'couche épaisse et sombre, pluie continue', d: [CIEL,
+          '.nuage-sombre.a M4 34 C24 30 44 33 64 30 C78 29 90 31 96 34 V66 C90 70 84 66 78 70 C70 66 62 71 54 67 C46 71 38 66 30 70 C22 66 12 70 4 66 Z',
+          pluie(10, 92, 71, 6)] },
+        { mot: 'stratocumulus', legende: 'bancs bas, en gros rouleaux', d: [CIEL,
+          '.nuage-gris.a M4 79 C1 71 9 66 16 68 C18 62 30 62 32 68 C36 62 48 62 50 68 C54 62 66 62 68 68 C72 62 84 62 86 68 C93 66 99 72 96 79 Z',
+          '.a.n M32 68 C35 72 35 76 33 79 M50 68 C53 72 53 76 51 79 M68 68 C71 72 71 76 69 79'] },
+        { mot: 'stratus', legende: 'couche basse, grise et uniforme', d: [CIEL,
+          '.nuage-gris.a M2 67 C20 64 40 66 60 64 C76 63 90 65 98 67 V78 C80 80 60 78 40 80 C24 81 10 79 2 78 Z',
+          '.pluie M20 82 V83 M34 83 V84 M48 82 V83 M62 83 V84 M76 82 V83'] },
+        { mot: 'cumulus', legende: 'bourgeonnant, à base plate', d: [CIEL,
+          '.nuage.a M18 78 C7 78 7 63 18 63 C16 51 30 45 38 51 C40 37 62 35 64 49 C72 43 87 51 80 62 C91 64 90 78 80 78 Z',
+          '.a.n M24 73 C34 75.5 48 75.5 58 72'] },
+        { mot: 'cumulonimbus', legende: 'nuage d’orage, du bas du ciel jusqu’en haut, en enclume', d: [CIEL,
+          '.nuage.sn M6 16 C22 9 78 9 94 15 C86 20 74 22 66 24 C74 30 74 38 68 42 C78 46 80 56 72 60 C84 63 84 74 74 74 L26 74 C16 74 16 63 28 60 C20 56 22 46 32 42 C26 38 26 30 34 24 C26 22 14 20 6 16 Z',
+          '.nuage-sombre.sn M26 74 C16 74 16 63 28 60 C40 64 60 64 72 60 C84 63 84 74 74 74 Z',
+          '.a M6 16 C22 9 78 9 94 15 C86 20 74 22 66 24 C74 30 74 38 68 42 C78 46 80 56 72 60 C84 63 84 74 74 74 L26 74 C16 74 16 63 28 60 C20 56 22 46 32 42 C26 38 26 30 34 24 C26 22 14 20 6 16 Z',
+          '.a.n M34 24 C44 27 56 27 66 24 M32 42 C40 45 48 44 54 41 M28 60 C40 64 60 64 72 60',
+          pluie(24, 44, 77, 5), '.eclair M58 75 L52 82 L56.5 82 L52 88 L62 79.5 L57.5 79.5 L61 75 Z'] },
+        { mot: 'nimbus', sens: /couche épaisse et longue de nuages/, legende: 'nuage sombre qui donne la pluie', d: [CIEL,
+          '.nuage-sombre.a M14 64 C3 64 3 52 14 52 C13 42 27 38 34 44 C38 32 58 32 60 42 C68 36 83 42 78 52 C89 52 90 64 80 64 Z',
+          pluie(14, 82, 67, 6)] },
       ],
     },
 

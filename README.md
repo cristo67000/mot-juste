@@ -46,9 +46,9 @@ ramène d'où l'on vient (le bouton Retour du téléphone aussi). Un mot absent 
 dictionnaire reste du texte — jamais de lien mort.
 
 **Voir : les planches illustrées.** Ce que les mots disent mal, un dessin le
-montre : 45 planches, près de 500 dessins au trait, pour 516 mots. Les formes
+montre : 45 planches, plus de 500 dessins au trait, pour 522 mots. Les formes
 du nez (*aquilin*, *busqué*, *camus*, *retroussé*…), les barbes, les
-coiffures, les chapeaux, les cols ; le visage, l'œil, la main en schémas
+coiffures, les postures, les chapeaux, les cols ; le visage, l'œil, la main en schémas
 numérotés ; les figures et les solides de géométrie, les phases de la Lune,
 les nuages, les formes des feuilles ; les arcs, les ordres, le château fort,
 les toits ; les motifs d'étoffes (*pied-de-poule*, *vichy*), le blason

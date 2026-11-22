@@ -703,6 +703,17 @@ body.fiche-ouverte #annonce, body.panneau-ouvert #annonce { bottom: calc(env(saf
 .ill-svg .i-hp { fill: rgba(0, 0, 0, .45); stroke: none; }
 .ill-svg .i-vy { fill: #c62a2a; fill-opacity: .45; stroke: none; }
 .ill-svg .i-tv { fill: #000; fill-opacity: .35; stroke: none; }
+.ill-svg .i-membre { stroke: var(--accent); stroke-width: 6.5; }
+.ill-svg .i-tronc { stroke: var(--accent); stroke-width: 9; }
+.ill-svg .i-loin { stroke-opacity: .42; }
+.ill-svg .i-nuage { fill: #eef1f6; }
+.ill-svg .i-nuage-gris { fill: #bcc2cb; }
+.ill-svg .i-nuage-sombre { fill: #7c838e; }
+.ill-svg .i-trouble { fill-opacity: .86; }
+.ill-svg .i-voile { fill: #dfe5ee; fill-opacity: .8; stroke: none; }
+.ill-svg .i-soleil { fill: #f2c94c; stroke: none; }
+.ill-svg .i-pluie { stroke: #6f9fd0; stroke-width: 1.5; }
+.ill-svg .i-eclair { fill: #f2c94c; stroke: #b8860b; stroke-width: .8; }
 .ill-svg .i-cheval-trait { stroke: rgba(0, 0, 0, .5); stroke-width: 1.6; }
 .ill-svg .i-cheval-reflet { stroke: rgba(255, 255, 255, .35); stroke-width: 3; }
 .ill-svg .i-ga { fill: var(--accent); }

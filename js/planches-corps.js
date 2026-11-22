@@ -48,11 +48,22 @@
 
   // ── Silhouettes ──────────────────────────────────────────────────────────
 
-  /* Un bonhomme : tête, et des segments de membres. */
-  function bonhomme(tete, segments, sol) {
-    const d = ['.d M6 ' + (sol || 86) + ' L94 ' + (sol || 86)];
-    d.push('.a C ' + tete.join(' ') + ' 6.5');
-    for (const s of segments) d.push('.a.g M' + s);
+  /* Un mannequin, comme ceux des pictogrammes : le tronc et les membres en
+   * traits épais, la tête pleine. Chaque membre part des épaules (`B`, un
+   * bras) ou du bassin (`J`, une jambe) et passe par ses articulations ; le
+   * bras et la jambe du côté éloigné sont plus pâles, et dessinés d'abord. */
+  const B = (points, loin) => ({ de: 'epaules', points, loin });
+  const J = (points, loin) => ({ de: 'bassin', points, loin });
+  function mannequin(o) {
+    const ligne = (points) => 'M' + points.map((p) => p.join(' ')).join(' L');
+    const membre = (m) => '.membre' + (m.loin ? '.loin ' : ' ') + ligne([o[m.de]].concat(m.points));
+    const d = o.sol === false ? [] : ['.d M4 ' + (o.sol || 88) + ' H96'];
+    d.push(...(o.decor || []));
+    for (const m of o.membres) if (m.loin) d.push(membre(m));
+    d.push('.tronc ' + (o.tronc || ligne([o.epaules, o.bassin])));
+    for (const m of o.membres) if (!m.loin) d.push(membre(m));
+    d.push('.fa C ' + o.tete.join(' ') + ' 6.5');
+    d.push(...(o.devant || []));
     return d;
   }
 
@@ -263,23 +274,52 @@
     {
       id: 'postures', titre: 'Postures', groupe: 'Le corps', sujets: ['posture'],
       items: [
-        { mot: 'accroupi', sens: /genoux repliés/, legende: 'sur la pointe des pieds, genoux repliés',
-          d: bonhomme([42, 30], ['44 37 L52 62', '52 62 L68 56 L64 84 L70 85', '48 46 L62 54 L66 52', '52 62 L60 66 L58 84 L63 85']) },
+        { mot: 'assis', sens: /Placé sur son séant/,
+          d: mannequin({ tete: [47, 23], epaules: [45, 34], bassin: [44, 60],
+            decor: ['.d.g M36 64 H66 M40 64 V88 M62 64 V88 M38 64 V34'],
+            membres: [J([[61, 61], [61, 82], [67, 85]], true), B([[48, 49], [58, 57]], true), J([[64, 60], [64, 82], [70, 85]]), B([[50, 48], [61, 56]])] }) },
+        { mot: 'accoudé', sens: /appuyé sur les coudes/, legende: 'appuyé sur les coudes',
+          d: mannequin({ tete: [59, 25], epaules: [52, 34], bassin: [40, 56],
+            decor: ['.d.g M58 55 H96', '.d M90 55 V88'],
+            membres: [J([[38, 72], [34, 85], [40, 86]], true), B([[57, 53], [58, 33]], true), J([[42, 72], [41, 85], [47, 86]]), B([[61, 52], [62, 32]])] }) },
+        { mot: 'accroupi', sens: /genoux repliés/, legende: 'les genoux repliés, sur la pointe des pieds',
+          d: mannequin({ tete: [60, 37], epaules: [55, 47], bassin: [47, 72],
+            membres: [J([[60, 63], [50, 80], [57, 85]], true), B([[59, 59], [69, 64]], true), J([[63, 62], [53, 80], [60, 85]]), B([[62, 58], [72, 62]])] }) },
         { mot: 'agenouillé', aussi: ['à genoux'], sens: /à genoux|Genoux à terre/, legende: 'les genoux à terre',
-          d: bonhomme([52, 16], ['52 23 L53 52', '53 52 L55 84 L30 84', '52 32 L48 50 L50 58', '53 52 L60 84 L36 85']) },
+          d: mannequin({ tete: [53, 26], epaules: [51, 37], bassin: [51, 63],
+            membres: [J([[49, 84], [29, 85], [23, 85]], true), B([[56, 50], [60, 40]], true), J([[53, 84], [33, 85], [27, 85]]), B([[58, 49], [61, 39]])] }) },
         { mot: 'à califourchon', sens: /une jambe d.un côté/, legende: 'une jambe de chaque côté',
-          d: ['.d C 50 66 10', '.d M40 66 L38 86 M60 66 L62 86', '.d M6 86 L94 86',
-            '.a C 50 18 6.5', '.a.g M50 25 L50 53', '.a.g M50 53 L36 60 L32 80 L28 82', '.a.g M50 53 L64 60 L68 80 L72 82', '.a.g M50 33 L40 46 L44 54', '.a.g M50 33 L60 46 L56 54'] },
+          d: mannequin({ tete: [50, 25], epaules: [50, 36], bassin: [50, 62],
+            decor: ['.d.fd C 50 76 11', '.d C 50 76 6.5', '.d C 50 76 2'],
+            membres: [J([[36, 68], [34, 85], [29, 85]]), J([[64, 68], [66, 85], [71, 85]]), B([[40, 47], [41, 62]]), B([[60, 47], [59, 62]])] }) },
         { mot: 'à quatre pattes', sens: /Sur les genoux et les mains/,
-          d: bonhomme([77, 46], ['70 52 L38 54', '68 53 L70 84 L76 84', '62 54 L62 84 L68 84', '38 54 L36 84 L18 84']) },
-        { mot: 'à plat ventre', sens: /ventre contre le sol/,
-          d: bonhomme([80, 77], ['73 80 L22 80', '66 80 L76 72 L84 70', '22 80 L10 79']) },
-        { mot: 'en chien de fusil', sens: /Allongé sur le cot/, legende: 'couché sur le côté, replié',
-          d: bonhomme([24, 66], ['31 70 C40 76 52 77 62 74', '62 74 L48 82 L64 84', '35 72 L46 66 L54 70']) },
+          d: mannequin({ tete: [73, 49], epaules: [62, 57], bassin: [36, 60],
+            membres: [J([[34, 84], [14, 85]], true), B([[59, 71], [60, 85], [64, 85]], true), J([[38, 84], [18, 85]]), B([[63, 71], [64, 85], [68, 85]])] }) },
+        { mot: 'à plat ventre', sens: /ventre contre le sol/, legende: 'le ventre contre le sol',
+          d: mannequin({ tete: [77, 74], epaules: [66, 80], bassin: [40, 81],
+            membres: [J([[24, 82], [15, 71]], true), B([[71, 85], [76, 78]], true), J([[26, 82], [12, 82], [9, 86]]), B([[74, 85], [79, 79]])] }) },
+        { mot: 'couché', sens: /Allongé sur un lit/, legende: 'allongé sur un lit',
+          d: mannequin({ tete: [22, 56], epaules: [32, 63], bassin: [56, 64], sol: false,
+            decor: ['.d M10 50 V88 M10 72 H92 M90 72 V88', '.d.fd M13 66 C13 60 31 60 31 66 Z'],
+            membres: [J([[72, 64], [86, 64], [88, 58]])],
+            devant: ['.a.ft M28 72 V64 C34 56 50 58 60 58 C72 58 84 56 90 60 V72 Z', '.gc.s T 36 46 9 z', '.gc.s T 43 38 7 z'] }) },
+        { mot: 'en chien de fusil', sens: /Allongé sur le cot/, legende: 'couché sur le côté, replié (vu d’en haut)',
+          d: mannequin({ tete: [37, 23], epaules: [43, 34], bassin: [58, 61], sol: false, tronc: 'M43 34 C57 38 63 50 58 61',
+            decor: ['.d R 12 8 76 86 6', '.d.fd R 22 13 32 13 5'],
+            membres: [J([[37, 55], [44, 74], [39, 80]], true), B([[35, 45], [31, 35]], true), J([[41, 51], [48, 71], [43, 77]]), B([[38, 43], [33, 33]])] }) },
         { mot: 'sur la pointe des pieds', sens: /appui sur les orteils/,
-          d: bonhomme([50, 14], ['50 21 L50 52', '50 52 L46 76 L47 85', '50 52 L54 76 L55 85', '50 28 L38 12', '50 28 L62 12', '43 80 L46.5 76 M57 80 L53.5 76']) },
-        { mot: 'à cloche-pied', sens: /Sur un seul pied/,
-          d: bonhomme([48, 14], ['48 21 L50 52', '50 52 L50 84 L56 85', '50 52 L60 66 L70 60', '48 30 L36 44', '48 30 L62 40']) },
+          d: mannequin({ tete: [49, 12], epaules: [48, 24], bassin: [47, 48],
+            decor: ['.d M60 8 H96', '.d R 78 1 8 7 1.5'],
+            membres: [J([[46, 64], [45, 77], [48, 86]], true), B([[57, 21], [65, 13]], true), J([[49, 64], [48, 77], [51, 86]]), B([[60, 20], [68, 12]])] }) },
+        { mot: 'à cloche-pied', sens: /Sur un seul pied/, legende: 'sur un seul pied',
+          d: mannequin({ tete: [51, 16], epaules: [49, 27], bassin: [48, 52],
+            membres: [B([[40, 37], [31, 32]], true), J([[49, 68], [48, 82], [54, 85]]), J([[55, 67], [39, 71], [35, 66]]), B([[58, 36], [68, 30]])] }) },
+        { mot: 'poirier', sens: /équilibre sur la tête/, legende: 'en équilibre sur la tête',
+          d: mannequin({ tete: [50, 81], epaules: [50, 70], bassin: [50, 44],
+            membres: [J([[48, 27], [47, 10]], true), B([[60, 74], [58, 85]], true), J([[52, 27], [53, 10]]), B([[40, 74], [42, 85]])] }) },
+        { mot: 'grand écart', sens: /écarter les jambes/,
+          d: mannequin({ tete: [50, 45], epaules: [50, 56], bassin: [50, 82],
+            membres: [J([[31, 84], [12, 85], [8, 82]]), J([[69, 84], [88, 85], [92, 82]]), B([[38, 47], [28, 39]]), B([[62, 47], [72, 39]])] }) },
       ],
     },
 
